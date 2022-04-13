@@ -20,6 +20,7 @@
 #include <components/debug/debuglog.hpp>
 
 #include "pingpongcanvas.hpp"
+#include "transparentpass.hpp"
 
 namespace osgViewer
 {
@@ -41,6 +42,7 @@ namespace MWRender
     class RenderingManager;
     class PingPongCull;
     class PingPongCanvas;
+    class TransparentDepthBinCallback;
 
     // We resolve depth early, so we must explicitly set the resolve framebuffer at right time during cull traversals.
     // This is **very** important, depth buffer blits can be incredibly costly with MSAA and floating point formats.
@@ -48,7 +50,7 @@ namespace MWRender
     {
     public:
         void operator()(osg::Node* node, osgUtil::CullVisitor* cv);
-        void setFbos(osg::ref_ptr<osg::FrameBufferObject> target, osg::ref_ptr<osg::FrameBufferObject> target2);
+        void setFbo(size_t frameId, osg::ref_ptr<osg::FrameBufferObject> fbo);
 
     private:
         std::array<osg::ref_ptr<osg::FrameBufferObject>, 2> mFbos;
@@ -156,9 +158,9 @@ namespace MWRender
 
         int height() const { return mViewer->getCamera()->getViewport()->height(); }
 
-        unsigned int frame() const { return mViewer->getFrameStamp()->getFrameNumber(); }
+        size_t frame() const { return mViewer->getFrameStamp()->getFrameNumber(); }
 
-        unsigned int nextFrame() const { return frame() + 1; }
+        void createObjectsForFrame(size_t frameId, int width, int height);
 
         void createTexturesAndCamera(int width, int height);
 
@@ -167,8 +169,6 @@ namespace MWRender
         void reloadMainPass(fx::Technique& technique);
 
         void dirtyTechniques();
-
-        void setupDispatchNodeStateSet(osg::StateSet& stateSet, fx::Technique& technique);
 
         osg::ref_ptr<ResolveFboInterceptor> mResolveCullCallback;
         osg::ref_ptr<osg::Group> mRootNode;
@@ -184,6 +184,8 @@ namespace MWRender
 
         int mDepthFormat;
         int mSamples;
+
+        std::array<bool, 2> mDirty;
 
         RenderingManager& mRendering;
         osgViewer::Viewer* mViewer;
@@ -205,6 +207,7 @@ namespace MWRender
         osg::ref_ptr<fx::StateUpdater> mStateUpdater;
         osg::ref_ptr<PingPongCull> mPingPongCull;
         osg::ref_ptr<PingPongCanvas> mPingPongCanvas;
+        osg::ref_ptr<TransparentDepthBinCallback> mTransparentDepthPostPass;
     };
 }
 

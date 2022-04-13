@@ -9,7 +9,7 @@
 
 namespace MWRender
 {
-        TransparentDepthBinCallback::TransparentDepthBinCallback(Shader::ShaderManager& shaderManager, const std::array<PostProcessor::FBOArray, 2>& fbos, bool postPass)
+        TransparentDepthBinCallback::TransparentDepthBinCallback(Shader::ShaderManager& shaderManager, bool postPass)
             : mPostPass(postPass)
         {
             osg::ref_ptr<osg::Image> image = new osg::Image;
@@ -33,8 +33,6 @@ namespace MWRender
 
             for (unsigned int unit = 1; unit < 8; ++unit)
                 mStateSet->setTextureMode(unit, GL_TEXTURE_2D, modeOff);
-
-            mFbos = fbos;
         }
 
         void TransparentDepthBinCallback::drawImplementation(osgUtil::RenderBin* bin, osg::RenderInfo& renderInfo, osgUtil::RenderLeaf*& previous)
@@ -45,9 +43,9 @@ namespace MWRender
             bool validFbo = false;
             unsigned int frameId = state.getFrameStamp()->getFrameNumber() % 2;
 
-            const auto& fbo = mFbos[frameId][PostProcessor::FBO_Primary];
-            const auto& msaaFbo = mFbos[frameId][PostProcessor::FBO_Multisample];
-            const auto& opaqueFbo = mFbos[frameId][PostProcessor::FBO_OpaqueDepth];
+            const auto& fbo = mFbo[frameId];
+            const auto& msaaFbo = mMsaaFbo[frameId];
+            const auto& opaqueFbo = mOpaqueFbo[frameId];
 
             if (bin->getStage()->getMultisampleResolveFramebufferObject() && bin->getStage()->getMultisampleResolveFramebufferObject() == fbo)
                 validFbo = true;

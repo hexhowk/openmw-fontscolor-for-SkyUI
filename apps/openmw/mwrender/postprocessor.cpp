@@ -2,6 +2,10 @@
 
 #include <SDL_opengl_glext.h>
 
+#include <osg/Texture1D>
+#include <osg/Texture2D>
+#include <osg/Texture3D>
+
 #include <components/settings/settings.hpp>
 #include <components/sceneutil/depth.hpp>
 #include <components/sceneutil/nodecallback.hpp>
@@ -56,18 +60,16 @@ namespace MWRender
             rs->setMultisampleResolveFramebufferObject(fbo);
     }
 
-    void ResolveFboInterceptor::setFbos(osg::ref_ptr<osg::FrameBufferObject> target, osg::ref_ptr<osg::FrameBufferObject> target2)
+    void ResolveFboInterceptor::setFbo(size_t frameId, osg::ref_ptr<osg::FrameBufferObject> fbo)
     {
-        mFbos[0] = new osg::FrameBufferObject;
-        mFbos[0]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, target->getAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0));
-
-        mFbos[1] = new osg::FrameBufferObject;
-        mFbos[1]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, target2->getAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0));
+        mFbos[frameId] = new osg::FrameBufferObject;
+        mFbos[frameId]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, fbo->getAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0));
     }
 
     PostProcessor::PostProcessor(RenderingManager& rendering, osgViewer::Viewer* viewer, osg::Group* rootNode, const VFS::Manager* vfs)
         : mDepthFormat(GL_DEPTH24_STENCIL8)
         , mSamples(Settings::Manager::getInt("antialiasing", "Video"))
+        , mDirty{true, true}
         , mRendering(rendering)
         , mViewer(viewer)
         , mVFS(vfs)
@@ -132,6 +134,12 @@ namespace MWRender
         mDisableDepthPasses = !usePostProcessing && !mSoftParticles;
 #endif
 
+        if (!mDisableDepthPasses)
+        {
+            mTransparentDepthPostPass = new TransparentDepthBinCallback(mRendering.getResourceSystem()->getSceneManager()->getShaderManager(), Settings::Manager::getBool("transparent postpass", "Post Processing"));
+            osgUtil::RenderBin::getRenderBinPrototype("DepthSortedBin")->setDrawCallback(mTransparentDepthPostPass);
+        }
+
         if (mUsePostProcessing)
         {
             for (const auto& name : mVFS->getRecursiveDirectoryIterator(fx::Technique::sSubdir))
@@ -192,93 +200,30 @@ namespace MWRender
 
     void PostProcessor::resize(int width, int height, bool resizeAttachments)
     {
-        // Double buffered textures doesn't make this thread safe, it's used here so we have access to previous frames color buffer.
-        // This is useful for things like calculating average luminance or screen-space reflections.
-        mViewer->stopThreading();
+        for (auto& technique : mTechniques)
+        {
+            for (auto& [name, rt] : technique->getRenderTargetsMap())
+            {
+                const auto [w, h] = rt.mSize.get(width, height);
+                rt.mTarget->setTextureSize(w, h);
+                rt.mTarget->dirtyTextureObject();
+            }
+        }
 
         if (resizeAttachments)
             createTexturesAndCamera(width, height);
 
-        for (size_t i = 0; i < mTextures.size(); ++i)
-        {
-            auto& fbos = mFbos[i];
-            auto& textures = mTextures[i];
-
-            for (auto& technique : mTechniques)
-            {
-                for (auto& [name, rt] : technique->getRenderTargetsMap())
-                {
-                    const auto [w, h] = rt.mSize.get(width, height);
-                    rt.mTarget->setTextureSize(w, h);
-                    rt.mTarget->dirtyTextureObject();
-                }
-            }
-
-            for (auto& tex : textures)
-            {
-                if (!tex)
-                    continue;
-
-                tex->setTextureSize(width, height);
-                tex->dirtyTextureObject();
-            }
-
-            fbos[FBO_Primary] = new osg::FrameBufferObject;
-            fbos[FBO_Primary]->setAttachment(osg::Camera::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
-            fbos[FBO_Primary]->setAttachment(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(textures[Tex_Depth]));
-
-            fbos[FBO_FirstPerson] = new osg::FrameBufferObject;
-            osg::ref_ptr<osg::RenderBuffer> fpDepthRb = new osg::RenderBuffer(width, height, textures[Tex_Depth]->getInternalFormat(), mSamples > 1 ? mSamples : 0);
-            fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(fpDepthRb));
-
-            // When MSAA is enabled we must first render to a render buffer, then
-            // blit the result to the FBO which is either passed to the main frame
-            // buffer for display or used as the entry point for a post process chain.
-            if (mSamples > 1)
-            {
-                fbos[FBO_Multisample] = new osg::FrameBufferObject;
-                osg::ref_ptr<osg::RenderBuffer> colorRB = new osg::RenderBuffer(width, height, textures[Tex_Scene]->getInternalFormat(), mSamples);
-                osg::ref_ptr<osg::RenderBuffer> depthRB = new osg::RenderBuffer(width, height, textures[Tex_Depth]->getInternalFormat(), mSamples);
-                fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
-                fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(depthRB));
-                fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
-            }
-            else
-                fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
-
-            if (textures[Tex_OpaqueDepth])
-            {
-                fbos[FBO_OpaqueDepth] = new osg::FrameBufferObject;
-                fbos[FBO_OpaqueDepth]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(textures[Tex_OpaqueDepth]));
-            }
-
-    #ifdef __APPLE__
-            if (textures[Tex_OpaqueDepth])
-                fbos[FBO_OpaqueDepth]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER, osg::FrameBufferAttachment(new osg::RenderBuffer(textures[Tex_OpaqueDepth]->getTextureWidth(), textures[Tex_OpaqueDepth]->getTextureHeight(), textures[Tex_Scene]->getInternalFormat())));
-    #endif
-        }
-
-        if (!mDisableDepthPasses)
-        {
-            static const bool postPass = Settings::Manager::getBool("transparent postpass", "Post Processing");
-            osg::ref_ptr<TransparentDepthBinCallback> cb = new TransparentDepthBinCallback(mRendering.getResourceSystem()->getSceneManager()->getShaderManager(), mFbos, postPass);
-            osgUtil::RenderBin::getRenderBinPrototype("DepthSortedBin")->setDrawCallback(cb);
-        }
-
-        if (mResolveCullCallback)
-            mResolveCullCallback->setFbos(mFbos[0][FBO_Primary], mFbos[1][FBO_Primary]);
+        createObjectsForFrame(frame() % 2, width, height);
 
         mHUDCamera->resize(width, height);
-
         mViewer->getCamera()->resize(width, height);
-
         mRendering.updateProjectionMatrix();
         mRendering.setScreenRes(width, height);
 
         dirtyTechniques();
-        mPingPongCanvas->dirty(frame());
 
-        mViewer->startThreading();
+        mPingPongCanvas->dirty(frame());
+        mDirty[(frame() + 1) % 2] = true;
     }
 
     void PostProcessor::update()
@@ -334,7 +279,83 @@ namespace MWRender
                 resize(width(), height());
         }
 
-        mPingPongCanvas->setMask(frame(), mUnderwater, mExteriorFlag);
+        size_t frameId = frame() % 2;
+
+        if (mDirty[frameId])
+        {
+            createObjectsForFrame(frameId, width(), height());
+            mDirty[frameId] = false;
+        }
+
+        mPingPongCanvas->setMask(frameId, mUnderwater, mExteriorFlag);
+        mPingPongCanvas->setHDR(frameId, getHDR());
+        mPingPongCanvas->setFallbackFbo(frameId, getFbo(FBO_Primary, frameId));
+        mPingPongCanvas->setSceneTexture(frameId, getTexture(Tex_Scene, frameId));
+        mPingPongCanvas->setLDRSceneTexture(frameId, getTexture(Tex_Scene_LDR, frameId));
+
+        if (mDisableDepthPasses)
+            mPingPongCanvas->setDepthTexture(frameId, getTexture(Tex_Depth, frameId));
+        else
+            mPingPongCanvas->setDepthTexture(frameId, getTexture(Tex_OpaqueDepth, frameId));
+    }
+
+    void PostProcessor::createObjectsForFrame(size_t frameId, int width, int height)
+    {
+        auto& fbos = mFbos[frameId];
+        auto& textures = mTextures[frameId];
+
+        for (auto& tex : textures)
+        {
+            if (!tex)
+                continue;
+
+            tex->setTextureSize(width, height);
+            tex->dirtyTextureObject();
+        }
+
+        fbos[FBO_Primary] = new osg::FrameBufferObject;
+        fbos[FBO_Primary]->setAttachment(osg::Camera::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
+        fbos[FBO_Primary]->setAttachment(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(textures[Tex_Depth]));
+
+        fbos[FBO_FirstPerson] = new osg::FrameBufferObject;
+        osg::ref_ptr<osg::RenderBuffer> fpDepthRb = new osg::RenderBuffer(width, height, textures[Tex_Depth]->getInternalFormat(), mSamples > 1 ? mSamples : 0);
+        fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(fpDepthRb));
+
+        // When MSAA is enabled we must first render to a render buffer, then
+        // blit the result to the FBO which is either passed to the main frame
+        // buffer for display or used as the entry point for a post process chain.
+        if (mSamples > 1)
+        {
+            fbos[FBO_Multisample] = new osg::FrameBufferObject;
+            osg::ref_ptr<osg::RenderBuffer> colorRB = new osg::RenderBuffer(width, height, textures[Tex_Scene]->getInternalFormat(), mSamples);
+            osg::ref_ptr<osg::RenderBuffer> depthRB = new osg::RenderBuffer(width, height, textures[Tex_Depth]->getInternalFormat(), mSamples);
+            fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
+            fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(depthRB));
+            fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
+        }
+        else
+            fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
+
+        if (textures[Tex_OpaqueDepth])
+        {
+            fbos[FBO_OpaqueDepth] = new osg::FrameBufferObject;
+            fbos[FBO_OpaqueDepth]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(textures[Tex_OpaqueDepth]));
+        }
+
+#ifdef __APPLE__
+        if (textures[Tex_OpaqueDepth])
+            fbos[FBO_OpaqueDepth]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER, osg::FrameBufferAttachment(new osg::RenderBuffer(textures[Tex_OpaqueDepth]->getTextureWidth(), textures[Tex_OpaqueDepth]->getTextureHeight(), textures[Tex_Scene]->getInternalFormat())));
+#endif
+    
+        if (mResolveCullCallback)
+            mResolveCullCallback->setFbo(frameId, mFbos[frameId][FBO_Primary]);
+
+        if (mTransparentDepthPostPass)
+        {
+            mTransparentDepthPostPass->mFbo[frameId] = mFbos[frameId][FBO_Primary];
+            mTransparentDepthPostPass->mMsaaFbo[frameId] = mFbos[frameId][FBO_Multisample];
+            mTransparentDepthPostPass->mOpaqueFbo[frameId] = mFbos[frameId][FBO_OpaqueDepth];
+        }
     }
 
     void PostProcessor::dirtyTechniques()
@@ -362,7 +383,39 @@ namespace MWRender
             if (node.mFlags & fx::Technique::Flag_Disable_SunGlare)
                 sunglare = false;
 
-            setupDispatchNodeStateSet(*node.mRootStateSet, *technique);
+            // required default samplers available to every shader pass
+            node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerLastShader", Unit_LastShader));
+            node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerLastPass", Unit_LastPass));
+            node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerDepth", Unit_Depth));
+
+            if (technique->getHDR())
+                node.mRootStateSet->addUniform(new osg::Uniform("omw_EyeAdaption", Unit_EyeAdaption));
+
+            int texUnit = Unit_NextFree;
+
+            // user-defined samplers
+            for (const osg::Texture* texture : technique->getTextures())
+            {
+                if (const auto* tex1D = dynamic_cast<const osg::Texture1D*>(texture))
+                    node.mRootStateSet->setTextureAttribute(texUnit, new osg::Texture1D(*tex1D));
+                else if (const auto* tex2D = dynamic_cast<const osg::Texture2D*>(texture))
+                    node.mRootStateSet->setTextureAttribute(texUnit, new osg::Texture2D(*tex2D));
+                else if (const auto* tex3D = dynamic_cast<const osg::Texture3D*>(texture))
+                    node.mRootStateSet->setTextureAttribute(texUnit, new osg::Texture3D(*tex3D));
+
+                node.mRootStateSet->addUniform(new osg::Uniform(texture->getName().c_str(), texUnit++));
+            }
+
+            // user-defined uniforms
+            for (auto& uniform : technique->getUniformMap())
+            {
+                if (uniform->mSamplerType) continue;
+
+                if (auto type = uniform->getType())
+                    uniform->setUniform(node.mRootStateSet->getOrCreateUniform(uniform->mName, type.value()));
+            }
+
+            int subTexUnit = texUnit;
 
             for (const auto& pass : technique->getPasses())
             {
@@ -370,7 +423,7 @@ namespace MWRender
 
                 pass->prepareStateSet(subPass.mStateSet, technique->getName());
 
-                node.mHandle = technique;                    
+                node.mHandle = technique;
 
                 if (!pass->getTarget().empty())
                 {
@@ -378,21 +431,24 @@ namespace MWRender
 
                     const auto [w, h] = rt.mSize.get(width(), height());
 
-                    rt.mTarget->setTextureSize(w, h);
-                    rt.mTarget->setNumMipmapLevels(rt.mMipmapLevels);
-                    rt.mTarget->dirtyTextureObject();
+                    subPass.mRenderTexture = new osg::Texture2D(*rt.mTarget);
+                    subPass.mRenderTexture->setTextureSize(w, h);
+                    subPass.mRenderTexture->setName(std::string(pass->getTarget()));
 
                     subPass.mRenderTarget = new osg::FrameBufferObject;
-                    subPass.mRenderTarget->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(rt.mTarget));
+                    subPass.mRenderTarget->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(subPass.mRenderTexture));
                     subPass.mStateSet->setAttributeAndModes(new osg::Viewport(0, 0, w, h));
-                    subPass.mMipMapLevels = rt.mMipmapLevels;
+
+                    node.mRootStateSet->setTextureAttributeAndModes(subTexUnit, subPass.mRenderTexture);
+                    node.mRootStateSet->addUniform(new osg::Uniform(subPass.mRenderTexture->getName().c_str(), subTexUnit++));
                 }
                 node.mPasses.emplace_back(std::move(subPass));
             }
+
             data.emplace_back(std::move(node));
         }
 
-        mPingPongCanvas->setCurrentFrameData(frame(), std::move(data));
+        mPingPongCanvas->setCurrentFrameData(frame() % 2, std::move(data));
 
         if (auto hud = MWBase::Environment::get().getWindowManager()->getPostProcessorHud())
             hud->updateTechniques();
@@ -612,41 +668,5 @@ namespace MWRender
             technique->compile();
 
         dirtyTechniques();
-    }
-
-    void PostProcessor::setupDispatchNodeStateSet(osg::StateSet& stateSet, fx::Technique& technique)
-    {
-        // required default samplers available to every shader pass
-        stateSet.addUniform(new osg::Uniform("omw_SamplerLastShader", Unit_LastShader));
-        stateSet.addUniform(new osg::Uniform("omw_SamplerLastPass", Unit_LastPass));
-        stateSet.addUniform(new osg::Uniform("omw_SamplerDepth", Unit_Depth));
-
-        if (technique.getHDR())
-            stateSet.addUniform(new osg::Uniform("omw_EyeAdaption", Unit_EyeAdaption));
-
-        int texUnit = Unit_NextFree;
-
-        // user-defined samplers, like noise or LUT
-        for (osg::Texture* texture : technique.getTextures())
-        {
-            stateSet.setTextureAttributeAndModes(texUnit, texture);
-            stateSet.addUniform(new osg::Uniform(texture->getName().c_str(), texUnit++));
-        }
-
-        // user-defined custom rendertargets
-        for (const auto& [name, rt] : technique.getRenderTargetsMap())
-        {
-            stateSet.setTextureAttributeAndModes(texUnit, rt.mTarget);
-            stateSet.addUniform(new osg::Uniform(std::string(name).c_str(), texUnit++));
-        }
-
-        // user-defined uniforms
-        for (auto& uniform : technique.getUniformMap())
-        {
-            if (uniform->mSamplerType) continue;
-
-            if (auto type = uniform->getType())
-                uniform->setUniform(stateSet.getOrCreateUniform(uniform->mName, type.value()));
-        }
     }
 }

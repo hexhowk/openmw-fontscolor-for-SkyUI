@@ -58,14 +58,15 @@ namespace fx
 
             osg::ref_ptr<osg::StateSet> mStateSet = new osg::StateSet;
             osg::ref_ptr<osg::FrameBufferObject> mRenderTarget;
-            int mMipMapLevels = 0;
+            osg::ref_ptr<osg::Texture2D> mRenderTexture;
 
             SubPass(const SubPass& other, const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY)
                 : mStateSet(new osg::StateSet(*other.mStateSet, copyOp))
-                , mMipMapLevels(other.mMipMapLevels)
             {
                 if (other.mRenderTarget)
                     mRenderTarget = new osg::FrameBufferObject(*other.mRenderTarget, copyOp);
+                if (other.mRenderTexture)
+                    mRenderTexture = new osg::Texture2D(*other.mRenderTexture, copyOp);
             }
         };
 

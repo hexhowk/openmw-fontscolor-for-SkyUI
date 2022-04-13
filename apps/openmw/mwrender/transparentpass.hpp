@@ -20,12 +20,15 @@ namespace MWRender
     class TransparentDepthBinCallback : public osgUtil::RenderBin::DrawCallback
     {
     public:
-        TransparentDepthBinCallback(Shader::ShaderManager& shaderManager, const std::array<PostProcessor::FBOArray, 2>& fbos, bool postPass);
+        TransparentDepthBinCallback(Shader::ShaderManager& shaderManager, bool postPass);
 
         void drawImplementation(osgUtil::RenderBin* bin, osg::RenderInfo& renderInfo, osgUtil::RenderLeaf*& previous) override;
 
+        std::array<osg::ref_ptr<osg::FrameBufferObject>, 2> mFbo;
+        std::array<osg::ref_ptr<osg::FrameBufferObject>, 2> mMsaaFbo;
+        std::array<osg::ref_ptr<osg::FrameBufferObject>, 2> mOpaqueFbo;
+
     private:
-        std::array<PostProcessor::FBOArray, 2> mFbos;
         osg::ref_ptr<osg::StateSet> mStateSet;
         bool mPostPass;
     };

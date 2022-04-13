@@ -34,7 +34,7 @@ namespace MWRender
         mLuminanceProgram = shaderManager.getProgram(vertex, hdrLuminance);
     }
 
-    void HDRDriver::compile(const PingPongCanvas& canvas) const
+    void HDRDriver::compile(int mipmapLevels, int w, int h) const
     {
         for (auto& buffer : mBuffers)
         {
@@ -44,8 +44,8 @@ namespace MWRender
             buffer.texture->setSourceType(GL_FLOAT);
             buffer.texture->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR_MIPMAP_NEAREST);
             buffer.texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
-            buffer.texture->setTextureSize(canvas.getSceneTexture()->getTextureWidth(), canvas.getSceneTexture()->getTextureHeight());
-            buffer.texture->setNumMipmapLevels(canvas.getMaxMipmapLevel());
+            buffer.texture->setTextureSize(w, h);
+            buffer.texture->setNumMipmapLevels(mipmapLevels);
 
             buffer.finalTexture = new osg::Texture2D;
             buffer.finalTexture->setInternalFormat(GL_R16F);
@@ -62,7 +62,7 @@ namespace MWRender
             buffer.fullscreenFbo->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(buffer.texture));
 
             buffer.mipmapFbo = new osg::FrameBufferObject;
-            buffer.mipmapFbo->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(buffer.texture, canvas.getMaxMipmapLevel() - 1));
+            buffer.mipmapFbo->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(buffer.texture, mipmapLevels - 1));
 
             buffer.fullscreenStateset = new osg::StateSet;
             buffer.fullscreenStateset->setAttributeAndModes(mLuminanceProgram);
@@ -83,7 +83,7 @@ namespace MWRender
     {
         auto& hdrBuffer = mBuffers[frameId];
         hdrBuffer.fullscreenFbo->apply(state, osg::FrameBufferObject::DRAW_FRAMEBUFFER);
-        hdrBuffer.fullscreenStateset->setTextureAttributeAndModes(0, canvas.getSceneTexture());
+        hdrBuffer.fullscreenStateset->setTextureAttributeAndModes(0, canvas.getSceneTexture(frameId));
 
         state.apply(hdrBuffer.fullscreenStateset);
         canvas.drawGeometry(renderInfo);

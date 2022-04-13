@@ -50,28 +50,16 @@ namespace MWRender
             renderStage->setFrameBufferObject(postProcessor->getFbo(PostProcessor::FBO_Multisample, frameId));
         }
 
-        // upload per-view data
-        postProcessor->getCanvas()->setFallbackFbo(frame, postProcessor->getFbo(PostProcessor::FBO_Primary, frameId));
-        postProcessor->getCanvas()->setSceneTextures(postProcessor->getTexture(PostProcessor::Tex_Scene, frameId), postProcessor->getTexture(PostProcessor::Tex_Scene_LDR, frameId));
-        postProcessor->getCanvas()->setHDR(postProcessor->getHDR());
-
-        if (postProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, frameId))
-            postProcessor->getCanvas()->setDepthTexture(postProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, frameId));
-        else
-            postProcessor->getCanvas()->setDepthTexture(postProcessor->getTexture(PostProcessor::Tex_Depth, frameId));
-
+        // per-view data
         postProcessor->getStateUpdater()->setViewMatrix(cv->getCurrentCamera()->getViewMatrix());
         postProcessor->getStateUpdater()->setInvViewMatrix(cv->getCurrentCamera()->getInverseViewMatrix());
         postProcessor->getStateUpdater()->setPrevViewMatrix(mLastViewMatrix);
         mLastViewMatrix = cv->getCurrentCamera()->getViewMatrix();
         postProcessor->getStateUpdater()->setEyePos(cv->getEyePoint());
         postProcessor->getStateUpdater()->setResolution(osg::Vec2f(cv->getViewport()->width(), cv->getViewport()->height()));
+        postProcessor->getStateUpdater()->setEyeVec(cv->getLookVectorLocal());
 
-        osg::Vec3d eyeVec = cv->getLookVectorLocal();
-        eyeVec.normalize();
-        postProcessor->getStateUpdater()->setEyeVec(eyeVec);
-
-        // upload per-frame data
+        // per-frame data
         if (frame != mLastFrameNumber)
         {
             mLastFrameNumber = frame;

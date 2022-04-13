@@ -26,44 +26,37 @@ namespace MWRender
 
         void drawImplementation(osg::RenderInfo& renderInfo) const override;
 
-        void dirty(unsigned int frame) { mBufferData[frame % 2].dirty = true; }
+        void dirty(size_t frame) { mBufferData[frame % 2].dirty = true; }
 
-        const fx::DispatchArray& getCurrentFrameData(unsigned int frame) { return mBufferData[frame % 2].data; }
+        const fx::DispatchArray& getCurrentFrameData(size_t frame) { return mBufferData[frame % 2].data; }
 
-        void setCurrentFrameData(unsigned int frame, fx::DispatchArray&& data);
+        void setCurrentFrameData(size_t frameId, fx::DispatchArray&& data);
 
-        void setMask(unsigned int frame, bool underwater, bool exterior);
+        void setMask(size_t frameId, bool underwater, bool exterior);
 
-        void setFallbackFbo(unsigned int frame, osg::ref_ptr<osg::FrameBufferObject> fbo) { mBufferData[frame % 2].fallbackFbo = fbo; }
+        void setFallbackFbo(size_t frameId, osg::ref_ptr<osg::FrameBufferObject> fbo) { mBufferData[frameId].fallbackFbo = fbo; }
 
-        void setSceneTextures(osg::ref_ptr<osg::Texture2D> texture, osg::ref_ptr<osg::Texture2D> textureLDR) { mSceneTex = texture; mSceneTexLDR = textureLDR;}
+        void setSceneTexture(size_t frameId, osg::ref_ptr<osg::Texture2D> tex) { mBufferData[frameId].sceneTex = tex; }
 
-        void setDepthTexture(osg::ref_ptr<osg::Texture2D> texture) { mDepthTex = texture; }
+        void setLDRSceneTexture(size_t frameId, osg::ref_ptr<osg::Texture2D> tex) { mBufferData[frameId].sceneTexLDR = tex; }
 
-        void setHDR(bool hdr) { mHDR = hdr; }
+        void setDepthTexture(size_t frameId, osg::ref_ptr<osg::Texture2D> tex) { mBufferData[frameId].depthTex = tex; }
 
-        size_t getMaxMipmapLevel() const { return mMaxMipMapLevel; }
+        void setHDR(size_t frameId, bool hdr) { mBufferData[frameId].hdr = hdr; }
 
-        const osg::ref_ptr<osg::Texture2D>& getSceneTexture() const { return mSceneTex; }
+        const osg::ref_ptr<osg::Texture2D>& getSceneTexture(size_t frameId) const { return mBufferData[frameId].sceneTex; }
 
         void drawGeometry(osg::RenderInfo& renderInfo) const;
 
     private:
-        void copyNewFrameData(unsigned int frameId) const;
+        void copyNewFrameData(size_t frameId) const;
 
         mutable bool mLoggedErrorLastFrame;
         const bool mUsePostProcessing;
 
-        bool mHDR;
         HDRDriver mHDRDriver;
 
-        mutable size_t mMaxMipMapLevel;
-
         osg::ref_ptr<osg::Program> mFallbackProgram;
-
-        osg::ref_ptr<osg::Texture2D> mSceneTex;
-        osg::ref_ptr<osg::Texture2D> mSceneTexLDR;
-        osg::ref_ptr<osg::Texture2D> mDepthTex;
 
         struct BufferData
         {
@@ -75,6 +68,12 @@ namespace MWRender
 
             osg::ref_ptr<osg::FrameBufferObject> destination;
             osg::ref_ptr<osg::FrameBufferObject> fallbackFbo;
+
+            osg::ref_ptr<osg::Texture2D> sceneTex;
+            osg::ref_ptr<osg::Texture2D> sceneTexLDR;
+            osg::ref_ptr<osg::Texture2D> depthTex;
+
+            bool hdr;
         };
 
         mutable std::array<BufferData, 2> mBufferData;

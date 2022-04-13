@@ -344,7 +344,7 @@ namespace fx
             else if (key == "source_format")
                 rt.mTarget->setSourceFormat(parseSourceFormat());
             else if (key == "mipmap_levels")
-                rt.mMipmapLevels = parseInteger();
+                rt.mTarget->setNumMipmapLevels(parseInteger());
             else
                 error(Misc::StringUtils::format("unexpected key '%s'", std::string(key)));
 

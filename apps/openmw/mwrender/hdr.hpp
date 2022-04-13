@@ -22,7 +22,7 @@ namespace MWRender
 
         HDRDriver(Shader::ShaderManager& shaderManager);
 
-        void compile(const PingPongCanvas& canvas) const;
+        void compile(int mipmapLevels, int w, int h) const;
         void draw(const PingPongCanvas& canvas, osg::RenderInfo& renderInfo, osg::State& state, osg::GLExtensions* ext, size_t frameId) const;
 
         osg::ref_ptr<osg::Texture2D> getLuminanceTexture(size_t frameId) const;
