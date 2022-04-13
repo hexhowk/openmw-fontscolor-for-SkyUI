@@ -135,6 +135,11 @@ namespace MWRender
             mProjectionMatrix = projectionMatrix;
         }
 
+        osg::Matrixf getProjectionMatrix() const
+        {
+            return mProjectionMatrix;
+        }
+
         void setLinearFac(float linearFac)
         {
             mLinearFac = linearFac;
@@ -453,11 +458,13 @@ namespace MWRender
         mSharedUniformStateUpdater = new SharedUniformStateUpdater(groundcover);
         rootNode->addUpdateCallback(mSharedUniformStateUpdater);
 
-        mPostProcessor = new PostProcessor(viewer, mRootNode);
-        resourceSystem->getSceneManager()->setDepthFormat(mPostProcessor->getDepthFormat());
-        resourceSystem->getSceneManager()->setOpaqueDepthTex(mPostProcessor->getOpaqueDepthTex());
+        mPostProcessor = new PostProcessor(*this, viewer, mRootNode, resourceSystem->getVFS());
+        resourceSystem->getSceneManager()->setDepthFormat(mPostProcessor->omw_GetDepthFormat());
 
-        if (reverseZ && !SceneUtil::isFloatingPointDepthFormat(mPostProcessor->getDepthFormat()))
+        if (mPostProcessor->softParticlesEnabled())
+            resourceSystem->getSceneManager()->setOpaqueDepthTex(mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 0), mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 1));
+
+        if (reverseZ && !SceneUtil::isFloatingPointDepthFormat(mPostProcessor->omw_GetDepthFormat()))
             Log(Debug::Warning) << "Floating point depth format not in use but reverse-z buffer is enabled, consider disabling it.";
 
         // water goes after terrain for correct waterculling order
@@ -641,9 +648,10 @@ namespace MWRender
 
     void RenderingManager::configureAmbient(const ESM::Cell *cell)
     {
+        bool isInterior = !cell->isExterior() && !(cell->mData.mFlags & ESM::Cell::QuasiEx);
         bool needsAdjusting = false;
         if (mResourceSystem->getSceneManager()->getLightingMethod() != SceneUtil::LightingMethod::FFP)
-            needsAdjusting = !cell->isExterior() && !(cell->mData.mFlags & ESM::Cell::QuasiEx);
+            needsAdjusting = isInterior;
 
         auto ambient = SceneUtil::colourFromRGB(cell->mAmbi.mAmbient);
 
@@ -673,11 +681,14 @@ namespace MWRender
         mSunLight->setPosition(osg::Vec4f(-0.15f, 0.15f, 1.f, 0.f));
     }
 
-    void RenderingManager::setSunColour(const osg::Vec4f& diffuse, const osg::Vec4f& specular)
+    void RenderingManager::setSunColour(const osg::Vec4f& diffuse, const osg::Vec4f& specular, float sunVis)
     {
         // need to wrap this in a StateUpdater?
         mSunLight->setDiffuse(diffuse);
         mSunLight->setSpecular(specular);
+
+        mPostProcessor->getStateUpdater()->setSunColor(diffuse);
+        mPostProcessor->getStateUpdater()->setSunVis(sunVis);
     }
 
     void RenderingManager::setSunDirection(const osg::Vec3f &direction)
@@ -687,6 +698,8 @@ namespace MWRender
         mSunLight->setPosition(osg::Vec4(position.x(), position.y(), position.z(), 0));
 
         mSky->setSunDirection(position);
+
+        mPostProcessor->getStateUpdater()->setSunPos(mSunLight->getPosition());
     }
 
     void RenderingManager::addCell(const MWWorld::CellStore *store)
@@ -728,6 +741,7 @@ namespace MWRender
             mShadowManager->enableOutdoorMode();
         else
             mShadowManager->enableIndoorMode();
+        mPostProcessor->getStateUpdater()->setIsInterior(!enabled);
     }
 
     bool RenderingManager::toggleBorders()
@@ -825,9 +839,24 @@ namespace MWRender
         mCamera->update(dt, paused);
 
         bool isUnderwater = mWater->isUnderwater(mCamera->getPosition());
-        mStateUpdater->setFogStart(mFog->getFogStart(isUnderwater));
-        mStateUpdater->setFogEnd(mFog->getFogEnd(isUnderwater));
-        setFogColor(mFog->getFogColor(isUnderwater));
+
+        auto fogStart = mFog->getFogStart(isUnderwater);
+        auto fogEnd = mFog->getFogEnd(isUnderwater);
+        auto fogColor = mFog->getFogColor(isUnderwater);
+
+        mStateUpdater->setFogStart(fogStart);
+        mStateUpdater->setFogEnd(fogEnd);
+        setFogColor(fogColor);
+
+        auto* world = MWBase::Environment::get().getWorld();
+
+        mPostProcessor->getStateUpdater()->setFogRange(fogStart, fogEnd);
+        mPostProcessor->getStateUpdater()->setNearFar(mNearClip, mViewDistance);
+        mPostProcessor->getStateUpdater()->setIsUnderwater(isUnderwater);
+        mPostProcessor->getStateUpdater()->setFogColor(fogColor);
+        mPostProcessor->getStateUpdater()->setGameHour(world->getTimeStamp().getHour());
+        mPostProcessor->setUnderwaterFlag(isUnderwater);
+        mPostProcessor->update();
     }
 
     void RenderingManager::updatePlayerPtr(const MWWorld::Ptr &ptr)
@@ -887,6 +916,8 @@ namespace MWRender
         mWater->setCullCallback(mTerrain->getHeightCullCallback(height, Mask_Water));
         mWater->setHeight(height);
         mSky->setWaterHeight(height);
+
+        mPostProcessor->getStateUpdater()->setWaterHeight(height);
     }
 
     void RenderingManager::screenshot(osg::Image* image, int w, int h)
@@ -1079,6 +1110,11 @@ namespace MWRender
         return mObjects->getAnimation(ptr);
     }
 
+    PostProcessor* RenderingManager::getPostProcessor()
+    {
+        return mPostProcessor;
+    }
+
     void RenderingManager::setupPlayer(const MWWorld::Ptr &player)
     {
         if (!mPlayerNode)
@@ -1162,12 +1198,25 @@ namespace MWRender
 
         mSharedUniformStateUpdater->setNear(mNearClip);
         mSharedUniformStateUpdater->setFar(mViewDistance);
-        mSharedUniformStateUpdater->setScreenRes(width, height);
+
+        if (!mPostProcessor->isEnabled())
+            setScreenRes(width, height);
 
         // Since our fog is not radial yet, we should take FOV in account, otherwise terrain near viewing distance may disappear.
         // Limit FOV here just for sure, otherwise viewing distance can be too high.
         float distanceMult = std::cos(osg::DegreesToRadians(std::min(fov, 140.f))/2.f);
         mTerrain->setViewDistance(mViewDistance * (distanceMult ? 1.f/distanceMult : 1.f));
+
+        if (mPostProcessor)
+        {
+            mPostProcessor->getStateUpdater()->setProjectionMatrix(mSharedUniformStateUpdater->getProjectionMatrix());
+            mPostProcessor->getStateUpdater()->setFov(fov);
+        }
+    }
+
+    void RenderingManager::setScreenRes(int width, int height)
+    {
+        mSharedUniformStateUpdater->setScreenRes(width, height);
     }
 
     void RenderingManager::updateTextureFiltering()

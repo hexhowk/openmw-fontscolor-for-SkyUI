@@ -55,6 +55,7 @@
 #include "../mwrender/renderingmanager.hpp"
 #include "../mwrender/camera.hpp"
 #include "../mwrender/vismask.hpp"
+#include "../mwrender/postprocessor.hpp"
 
 #include "../mwscript/globalscripts.hpp"
 
@@ -4044,4 +4045,8 @@ namespace MWWorld
         return mPrng;
     }
 
+    MWRender::PostProcessor* World::getPostProcessor()
+    {
+        return mRendering->getPostProcessor();
+    }
 }

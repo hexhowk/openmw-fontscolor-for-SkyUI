@@ -13,7 +13,7 @@ namespace Settings
         void loadSettingsFile(const std::string& file, CategorySettingValueMap& settings,
                               bool base64encoded = false, bool overrideExisting = false);
 
-        void saveSettingsFile(const std::string& file, const CategorySettingValueMap& settings);
+        void saveSettingsFile(const std::string& file, const CategorySettingValueMap& settings, bool ignoreInvalid = false, bool printHint = true);
 
     private:
         /// Increment i until it longer points to a whitespace character

@@ -67,6 +67,7 @@ namespace MWRender
     class Animation;
     class Camera;
     class RenderingManager;
+    class PostProcessor;
 }
 
 namespace MWMechanics
@@ -672,6 +673,8 @@ namespace MWBase
             virtual Misc::Rng::Generator& getPrng() = 0;
 
             virtual MWRender::RenderingManager* getRenderingManager() = 0;
+
+            virtual MWRender::PostProcessor* getPostProcessor() = 0;
     };
 }
 

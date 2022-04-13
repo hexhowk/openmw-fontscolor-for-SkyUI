@@ -247,6 +247,7 @@ namespace MWRender
         , mBaseWindSpeed(0.f)
         , mEnabled(true)
         , mSunEnabled(true)
+        , mSunglareEnabled(true)
         , mPrecipitationAlpha(0.f)
         , mDirtyParticlesEffect(false)
     {
@@ -302,6 +303,7 @@ namespace MWRender
         atmosphereNight->addUpdateCallback(mAtmosphereNightUpdater);
 
         mSun.reset(new Sun(mEarlyRenderBinRoot, *mSceneManager));
+        mSun->setSunglare(mSunglareEnabled);
         mMasser.reset(new Moon(mEarlyRenderBinRoot, *mSceneManager, Fallback::Map::getFloat("Moons_Masser_Size")/125, Moon::Type_Masser));
         mSecunda.reset(new Moon(mEarlyRenderBinRoot, *mSceneManager, Fallback::Map::getFloat("Moons_Secunda_Size")/125, Moon::Type_Secunda));
 
@@ -771,6 +773,14 @@ namespace MWRender
         if (!mCreated) return 0.f;
 
         return mBaseWindSpeed;
+    }
+
+    void SkyManager::setSunglare(bool enabled)
+    {
+        mSunglareEnabled = enabled;
+
+        if (mSun)
+            mSun->setSunglare(mSunglareEnabled);
     }
 
     void SkyManager::sunEnable()

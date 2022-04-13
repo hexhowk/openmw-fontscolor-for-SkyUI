@@ -82,6 +82,8 @@ add_component_dir (to_utf8
 
 add_component_dir(esm attr common defs esmcommon reader records util luascripts format)
 
+add_component_dir(fx pass technique lexer widgets stateupdater)
+
 add_component_dir (esm3
     esmreader esmwriter loadacti loadalch loadappa loadarmo loadbody loadbook loadbsgn loadcell
     loadclas loadclot loadcont loadcrea loaddial loaddoor loadench loadfact loadglob loadgmst
@@ -238,7 +240,7 @@ add_component_dir (myguiplatform
     )
 
 add_component_dir (widgets
-    box fontwrapper imagebutton tags list numericeditbox sharedstatebutton windowcaption widgets
+    box fontwrapper imagebutton tags list sharedstatebutton windowcaption widgets
     )
 
 add_component_dir (fontloader

@@ -37,7 +37,7 @@ namespace SceneUtil
 
         osg::Texture* getColorTexture(osgUtil::CullVisitor* cv);
 
-        osg::Texture* getDepthTexture(osgUtil::CullVisitor* cv);
+        osg::Texture* omw_GetDepthTexture(osgUtil::CullVisitor* cv);
 
 
         /// Apply state - to override in derived classes

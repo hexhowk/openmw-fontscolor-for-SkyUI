@@ -95,14 +95,13 @@ namespace MWRender
             // glReadPixel() cannot read from multisampled targets
             PostProcessor* postProcessor = dynamic_cast<PostProcessor*>(renderInfo.getCurrentCamera()->getUserData());
 
-            if (postProcessor && postProcessor->getFbo())
+            unsigned int frameId = renderInfo.getState()->getFrameStamp()->getFrameNumber() % 2;
+
+            if (postProcessor && postProcessor->getFbo(PostProcessor::FBO_Primary, frameId))
             {
                 osg::GLExtensions* ext = osg::GLExtensions::Get(renderInfo.getContextID(), false);
                 if (ext)
-                {
-                    ext->glBindFramebuffer(GL_FRAMEBUFFER_EXT, postProcessor->getFbo()->getHandle(renderInfo.getContextID()));
-                    renderInfo.getState()->glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
-                }
+                    postProcessor->getFbo(PostProcessor::FBO_Primary, frameId)->apply(*renderInfo.getState(), osg::FrameBufferObject::READ_FRAMEBUFFER);
             }
 
             mImage->readPixels(leftPadding, topPadding, width, height, GL_RGB, GL_UNSIGNED_BYTE);

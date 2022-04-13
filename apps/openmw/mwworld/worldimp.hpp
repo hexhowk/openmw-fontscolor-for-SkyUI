@@ -54,6 +54,7 @@ namespace MWRender
     class SkyManager;
     class Animation;
     class Camera;
+    class PostProcessor;
 }
 
 namespace ToUTF8
@@ -748,6 +749,8 @@ namespace MWWorld
             Misc::Rng::Generator& getPrng() override;
 
             MWRender::RenderingManager* getRenderingManager() override { return mRendering.get(); }
+
+            MWRender::PostProcessor* getPostProcessor() override;
     };
 }
 

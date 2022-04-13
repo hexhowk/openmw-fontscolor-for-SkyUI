@@ -92,7 +92,7 @@ namespace Resource
         bool getClampLighting() const;
 
         void setDepthFormat(GLenum format);
-        GLenum getDepthFormat() const;
+        GLenum omw_GetDepthFormat() const;
 
         /// @see ShaderVisitor::setAutoUseNormalMaps
         void setAutoUseNormalMaps(bool use);
@@ -112,12 +112,13 @@ namespace Resource
         void setSupportedLightingMethods(const SceneUtil::LightManager::SupportedMethods& supported);
         bool isSupportedLightingMethod(SceneUtil::LightingMethod method) const;
 
-        void setOpaqueDepthTex(osg::ref_ptr<osg::Texture2D> texture);
+        void setOpaqueDepthTex(osg::ref_ptr<osg::Texture2D> texturePing, osg::ref_ptr<osg::Texture2D> texturePong);
 
         enum class UBOBinding
         {
             // If we add more UBO's, we should probably assign their bindings dynamically according to the current count of UBO's in the programTemplate
-            LightBuffer
+            LightBuffer,
+            PostProcessor
         };
         void setLightingMethod(SceneUtil::LightingMethod method);
         SceneUtil::LightingMethod getLightingMethod() const;
@@ -212,7 +213,7 @@ namespace Resource
         SceneUtil::LightManager::SupportedMethods mSupportedLightingMethods;
         bool mConvertAlphaTestToAlphaToCoverage;
         GLenum mDepthFormat;
-        osg::ref_ptr<osg::Texture2D> mOpaqueDepthTex;
+        std::array<osg::ref_ptr<osg::Texture2D>, 2> mOpaqueDepthTex;
 
         osg::ref_ptr<Resource::SharedStateManager> mSharedStateManager;
         mutable std::mutex mSharedStateMutex;

@@ -20,6 +20,7 @@ Lua API reference
     openmw_input
     openmw_ui
     openmw_camera
+    openmw_shader
     openmw_aux_calendar
     openmw_aux_util
     openmw_aux_time
@@ -71,6 +72,8 @@ Player scripts are local scripts that are attached to a player.
 |:ref:`openmw.ui <Package openmw.ui>`                     | by player scripts  | | Controls :ref:`user interface <User interface reference>`.  |
 +---------------------------------------------------------+--------------------+---------------------------------------------------------------+
 |:ref:`openmw.camera <Package openmw.camera>`             | by player scripts  | | Controls camera.                                            |
++---------------------------------------------------------+--------------------+---------------------------------------------------------------+
+|:ref:`openmw.shader <Package openmw.shader>`             | by player scripts  | | Controls postprocess shaders                                |
 +---------------------------------------------------------+--------------------+---------------------------------------------------------------+
 
 **openmw_aux**

@@ -348,7 +348,7 @@ namespace Resource
         if (forceShadersForNode)
             shaderVisitor->setForceShaders(true);
         if (disableSoftParticles)
-            shaderVisitor->setOpaqueDepthTex(nullptr);
+            shaderVisitor->setOpaqueDepthTex(nullptr, nullptr);
         node->accept(*shaderVisitor);
     }
 
@@ -373,7 +373,7 @@ namespace Resource
         mDepthFormat = format;
     }
 
-    GLenum SceneManager::getDepthFormat() const
+    GLenum SceneManager::omw_GetDepthFormat() const
     {
         return mDepthFormat;
     }
@@ -440,9 +440,9 @@ namespace Resource
         mConvertAlphaTestToAlphaToCoverage = convert;
     }
 
-    void SceneManager::setOpaqueDepthTex(osg::ref_ptr<osg::Texture2D> texture)
+    void SceneManager::setOpaqueDepthTex(osg::ref_ptr<osg::Texture2D> texturePing, osg::ref_ptr<osg::Texture2D> texturePong)
     {
-        mOpaqueDepthTex = texture;
+        mOpaqueDepthTex = { texturePing, texturePong };
     }
 
     SceneManager::~SceneManager()
@@ -930,7 +930,7 @@ namespace Resource
         shaderVisitor->setSpecularMapPattern(mSpecularMapPattern);
         shaderVisitor->setApplyLightingToEnvMaps(mApplyLightingToEnvMaps);
         shaderVisitor->setConvertAlphaTestToAlphaToCoverage(mConvertAlphaTestToAlphaToCoverage);
-        shaderVisitor->setOpaqueDepthTex(mOpaqueDepthTex);
+        shaderVisitor->setOpaqueDepthTex(mOpaqueDepthTex[0], mOpaqueDepthTex[1]);
         return shaderVisitor;
     }
 }

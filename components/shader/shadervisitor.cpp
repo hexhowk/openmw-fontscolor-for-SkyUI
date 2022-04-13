@@ -27,6 +27,50 @@
 #include "removedalphafunc.hpp"
 #include "shadermanager.hpp"
 
+namespace
+{
+    class OpaqueDepthAttribute : public osg::StateAttribute
+    {
+    public:
+        OpaqueDepthAttribute() = default;
+
+        OpaqueDepthAttribute(const OpaqueDepthAttribute& copy, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY)
+            : osg::StateAttribute(copy, copyop), mTextures(copy.mTextures), mUnit(copy.mUnit) {}
+
+        void setTexturesAndUnit(const std::array<osg::ref_ptr<osg::Texture2D>, 2>& textures, int unit)
+        {
+            mTextures = textures;
+            mUnit = unit;
+        }
+
+        META_StateAttribute(Shader, OpaqueDepthAttribute, osg::StateAttribute::TEXTURE)
+
+        int compare(const StateAttribute& sa) const override
+        {
+            COMPARE_StateAttribute_Types(OpaqueDepthAttribute, sa);
+
+            COMPARE_StateAttribute_Parameter(mTextures);
+
+            return 0;
+        }
+
+        void apply(osg::State& state) const override
+        {
+            auto index = state.getFrameStamp()->getFrameNumber() % 2;
+
+            if (!mTextures[index])
+                return;
+
+            state.setActiveTextureUnit(mUnit);
+            state.applyTextureAttribute(mUnit, mTextures[index]);
+        }
+
+    private:
+        mutable std::array<osg::ref_ptr<osg::Texture2D>, 2> mTextures;
+        int mUnit;
+    };
+}
+
 namespace Shader
 {
     /**
@@ -638,11 +682,15 @@ namespace Shader
             writableStateSet->addUniform(new osg::Uniform("particleSize", reqs.mSoftParticleSize));
             addedState->addUniform("particleSize");
 
-            writableStateSet->addUniform(new osg::Uniform("opaqueDepthTex", 2));
+            constexpr int unit = 2;
+
+            writableStateSet->addUniform(new osg::Uniform("opaqueDepthTex", unit));
             addedState->addUniform("opaqueDepthTex");
 
-            writableStateSet->setTextureAttributeAndModes(2, mOpaqueDepthTex, osg::StateAttribute::ON);
-            addedState->setTextureAttributeAndModes(2, mOpaqueDepthTex);
+            osg::ref_ptr<OpaqueDepthAttribute> opaqueDepthAttr = new OpaqueDepthAttribute;
+            opaqueDepthAttr->setTexturesAndUnit(mOpaqueDepthTex, unit);
+            writableStateSet->setAttributeAndModes(opaqueDepthAttr, osg::StateAttribute::ON|osg::StateAttribute::OVERRIDE);
+            addedState->setAttributeAndModes(opaqueDepthAttr);
         }
 
         defineMap["softParticles"] = reqs.mSoftParticles ? "1" : "0";
@@ -837,7 +885,7 @@ namespace Shader
         {
             pushRequirements(drawable);
 
-            if (partsys && mOpaqueDepthTex)
+            if (partsys && mOpaqueDepthTex[0])
             {
                 mRequirements.back().mSoftParticles = true;
                 mRequirements.back().mSoftParticleSize = partsys->getDefaultParticleTemplate().getSizeRange().maximum;
@@ -912,9 +960,9 @@ namespace Shader
         mConvertAlphaTestToAlphaToCoverage = convert;
     }
 
-    void ShaderVisitor::setOpaqueDepthTex(osg::ref_ptr<osg::Texture2D> texture)
+    void ShaderVisitor::setOpaqueDepthTex(osg::ref_ptr<osg::Texture2D> texturePing, osg::ref_ptr<osg::Texture2D> texturePong)
     {
-        mOpaqueDepthTex = texture;
+        mOpaqueDepthTex = { texturePing, texturePong };
     }
 
     ReinstateRemovedStateVisitor::ReinstateRemovedStateVisitor(bool allowedToModifyStateSets)

@@ -26,6 +26,7 @@ namespace Gui
         MyGUI::FactoryManager::getInstance().registerFactory<Gui::Button>("Widget");
         MyGUI::FactoryManager::getInstance().registerFactory<Gui::ImageButton>("Widget");
         MyGUI::FactoryManager::getInstance().registerFactory<Gui::NumericEditBox>("Widget");
+        MyGUI::FactoryManager::getInstance().registerFactory<Gui::FloatEditBox>("Widget");
         MyGUI::FactoryManager::getInstance().registerFactory<Gui::SharedStateButton>("Widget");
         MyGUI::FactoryManager::getInstance().registerFactory<Gui::WindowCaption>("Widget");
     }
