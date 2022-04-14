@@ -435,6 +435,9 @@ namespace MWRender
                     subPass.mRenderTexture->setTextureSize(w, h);
                     subPass.mRenderTexture->setName(std::string(pass->getTarget()));
 
+                    if (rt.mMipMap)
+                        subPass.mRenderTexture->setNumMipmapLevels(osg::Image::computeNumberOfMipmapLevels(w, h));
+
                     subPass.mRenderTarget = new osg::FrameBufferObject;
                     subPass.mRenderTarget->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(subPass.mRenderTexture));
                     subPass.mStateSet->setAttributeAndModes(new osg::Viewport(0, 0, w, h));

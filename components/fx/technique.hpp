@@ -213,8 +213,6 @@ namespace fx
 
         osg::Texture::FilterMode parseFilterMode();
 
-        osg::Texture::InternalFormatMode parseCompression();
-
         template <class TDelimeter>
         std::vector<std::string_view> parseLiteralList();
 

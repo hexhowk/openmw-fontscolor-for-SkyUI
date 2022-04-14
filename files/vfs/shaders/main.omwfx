@@ -24,7 +24,7 @@ uniform_float uContrast {
 
 fragment main {
 
-    IN vec2 omw_TexCoord;
+    omw_In vec2 omw_TexCoord;
 
     uniform sampler2D omw_SamplerLastShader;
 

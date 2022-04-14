@@ -31,7 +31,6 @@ namespace
         osg::Texture::WrapMode wrap_r = osg::Texture::CLAMP_TO_EDGE;
         osg::Texture::FilterMode min_filter = osg::Texture::LINEAR_MIPMAP_LINEAR;
         osg::Texture::FilterMode mag_filter =osg::Texture::LINEAR;
-        osg::Texture::InternalFormatMode compression = osg::Texture::USE_IMAGE_DATA_FORMAT;
     };
 }
 
@@ -343,8 +342,8 @@ namespace fx
                 rt.mTarget->setSourceType(parseSourceType());
             else if (key == "source_format")
                 rt.mTarget->setSourceFormat(parseSourceFormat());
-            else if (key == "mipmap_levels")
-                rt.mTarget->setNumMipmapLevels(parseInteger());
+            else if (key == "mipmaps")
+                rt.mMipMap = parseBool();
             else
                 error(Misc::StringUtils::format("unexpected key '%s'", std::string(key)));
 
@@ -458,8 +457,6 @@ namespace fx
                 proxy.wrap_t = parseWrapMode();
             else if (is3D && key == "wrap_r")
                 proxy.wrap_r = parseWrapMode();
-            else if (key == "compression")
-                proxy.compression = parseCompression();
             else if (key == "source")
             {
                 expect<Lexer::String>();
@@ -497,7 +494,6 @@ namespace fx
             sampler->setWrap(osg::Texture::WRAP_R, proxy.wrap_r);
         sampler->setWrap(osg::Texture::WRAP_S, proxy.wrap_s);
         sampler->setWrap(osg::Texture::WRAP_T, proxy.wrap_t);
-        sampler->setInternalFormatMode(proxy.compression);
         sampler->setName(std::string{mBlockName});
 
         mTextures.emplace_back(sampler);
@@ -898,19 +894,6 @@ namespace fx
         }
 
         error(Misc::StringUtils::format("unrecognized wrap mode '%s'", std::string{asLiteral()}));
-    }
-
-    osg::Texture::InternalFormatMode Technique::parseCompression()
-    {
-        expect<Lexer::Literal>();
-
-        for (const auto& [identifer, mode]: constants::Compression)
-        {
-            if (asLiteral() == identifer)
-                return mode;
-        }
-
-        error(Misc::StringUtils::format("unrecognized compression '%s'", std::string{asLiteral()}));
     }
 
     int Technique::parseInternalFormat()

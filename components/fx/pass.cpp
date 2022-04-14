@@ -21,9 +21,9 @@ namespace
 {
     constexpr char s_DefaultVertex[] = R"GLSL(
 #if OMW_USE_BINDINGS
-    IN vec2 omw_Vertex;
+    omw_In vec2 omw_Vertex;
 #endif
-OUT vec2 omw_TexCoord;
+omw_Out vec2 omw_TexCoord;
 
 void main()
 {
@@ -108,8 +108,8 @@ struct _omw_data {
 #define OMW_RADIAL_FOG @radialFog
 #define OMW_HDR @hdr
 #define OMW_USE_BINDINGS @useBindings
-#define IN @in
-#define OUT @out
+#define omw_In @in
+#define omw_Out @out
 #define omw_Position @position
 #define omw_Texture1D @texture1D
 #define omw_Texture2D @texture2D

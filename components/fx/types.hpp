@@ -53,7 +53,7 @@ namespace fx
         {
             osg::ref_ptr<osg::Texture2D> mTarget = new osg::Texture2D;
             SizeProxy mSize;
-            int mMipmapLevels = 0;
+            bool mMipMap = false;
         };
 
         template <class T>
