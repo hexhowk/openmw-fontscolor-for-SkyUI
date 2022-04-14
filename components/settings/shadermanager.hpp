@@ -4,14 +4,16 @@
 #include <unordered_map>
 #include <filesystem>
 #include <optional>
+#include <fstream>
 
-#include <osg/io_utils>
+#include <yaml-cpp/yaml.h>
+
 #include <osg/Vec2f>
 #include <osg/Vec3f>
 #include <osg/Vec4f>
 
-#include <components/settings/categories.hpp>
-#include <components/settings/parser.hpp>
+#include <components/serialization/osgyaml.hpp>
+#include <components/debug/debuglog.hpp>
 
 namespace Settings
 {
@@ -38,53 +40,49 @@ namespace Settings
         template <class T>
         static void setValue(const std::string& tname, const std::string& uname, const T& value)
         {
-            std::string svalue = mStringFactory.clear() << value;
-            ShaderManager::mSettings[{tname, uname}] = svalue;
+            ShaderManager::mData[tname][uname] = value;
         }
 
         template <class T>
         static std::optional<T> getValue(const std::string& tname, const std::string& uname)
         {
-            auto it = mSettings.find({tname, uname});
-
-            if (it == mSettings.end())
+            if (!ShaderManager::mData[tname][uname])
                 return std::nullopt;
-
-            std::istringstream ss(it->second);
-
-            T value;
-            ss >> value;
-
-            if (ss.fail())
-                return std::nullopt;
-
-            return value;
+            return ShaderManager::mData[tname][uname].as<T>();
         }
 
         void load(const std::string& userConfigPath)
         {
-            SettingsFileParser parser;
-            parser.loadSettingsFile(ShaderManager::getPath(userConfigPath).string(), ShaderManager::mSettings);
+            auto path = ShaderManager::getPath(userConfigPath);
+            Log(Debug::Info) << "Loading shader settings file: " << path;
+
+            if (!std::filesystem::exists(path))
+            {
+                std::ofstream fout(path);
+            }
+
+            mData = YAML::LoadFile(path);
         }
 
         void save(const std::string& userConfigPath)
         {
-            SettingsFileParser parser;
-            parser.saveSettingsFile(ShaderManager::getPath(userConfigPath).string(), ShaderManager::mSettings, true, false);
+            auto path = ShaderManager::getPath(userConfigPath);
+            Log(Debug::Info) << "Updating shader settings file: " << path;
+
+            std::ofstream fout(path);
+            fout << mData;
         }
 
     private:
 
         inline static std::filesystem::path getPath(const std::string& userConfigPath)
         {
-            return std::filesystem::path(userConfigPath) / "shader_settings.cfg";
+            return std::filesystem::path(userConfigPath) / "shaders.yaml";
         }
 
+        inline static YAML::Node mData;
+
         inline static Mode mMode = Mode::Normal;
-
-        inline static CategorySettingValueMap mSettings;
-
-        inline static osg::MakeString mStringFactory;
     };
 }
 
