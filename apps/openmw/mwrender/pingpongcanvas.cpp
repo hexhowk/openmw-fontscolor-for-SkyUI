@@ -132,7 +132,7 @@ namespace MWRender
                 fbo = new osg::FrameBufferObject;
                 fbo->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(new osg::Texture2D(*bufferData.sceneTexLDR)));
                 fbo->apply(state);
-                glClearColor(0, 0, 0, 0);
+                glClearColor(0.5, 0.5, 0.5, 1);
                 glClear(GL_COLOR_BUFFER_BIT);
             }
 
