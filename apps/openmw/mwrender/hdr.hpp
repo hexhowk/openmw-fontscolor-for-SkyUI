@@ -1,8 +1,11 @@
 #ifndef OPENMW_MWRENDER_HDR_H
 #define OPENMW_MWRENDER_HDR_H
 
+#include <array>
+
 #include <osg/FrameBufferObject>
 #include <osg/Texture2D>
+#include <osg/Program>
 
 namespace Shader
 {
