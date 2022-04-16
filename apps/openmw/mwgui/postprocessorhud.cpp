@@ -65,6 +65,11 @@ namespace MWGui
         getWidget(mModeToggle, "ModeToggle");
         getWidget(mConfigLayout, "ConfigLayout");
         getWidget(mFilter, "Filter");
+        getWidget(mButtonActivate, "ButtonActivate");
+        getWidget(mButtonDeactivate, "ButtonDeactivate");
+
+        mButtonActivate->eventMouseButtonClick += MyGUI::newDelegate(this, &PostProcessorHud::notifyActivatePressed);
+        mButtonDeactivate->eventMouseButtonClick += MyGUI::newDelegate(this, &PostProcessorHud::notifyDeactivatePressed);
 
         mActiveList->eventKeyButtonPressed += MyGUI::newDelegate(this, &PostProcessorHud::notifyKeyButtonPressed);
         mInactiveList->eventKeyButtonPressed += MyGUI::newDelegate(this, &PostProcessorHud::notifyKeyButtonPressed);
@@ -123,6 +128,18 @@ namespace MWGui
         updateConfigView(sender->getItemNameAt(index));
     }
 
+    void PostProcessorHud::notifyActivatePressed(MyGUI::Widget* sender)
+    {
+        if (mInactiveList->getIndexSelected() != MyGUI::ITEM_NONE)
+            notifyKeyButtonPressed(mInactiveList, MyGUI::KeyCode::ArrowRight, MyGUI::Char{});
+    }
+
+    void PostProcessorHud::notifyDeactivatePressed(MyGUI::Widget* sender)
+    {
+        if (mActiveList->getIndexSelected() != MyGUI::ITEM_NONE)
+            notifyKeyButtonPressed(mActiveList, MyGUI::KeyCode::ArrowLeft, MyGUI::Char{});
+    }
+
     void PostProcessorHud::notifyKeyButtonPressed(MyGUI::Widget* sender, MyGUI::KeyCode key, MyGUI::Char ch)
     {
         auto* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
@@ -179,7 +196,7 @@ namespace MWGui
 
     void PostProcessorHud::notifyModeToggle(MyGUI::Widget* sender)
     {
-        Settings::ShaderManager::Mode prev = Settings::ShaderManager::getMode();
+        Settings::ShaderManager::Mode prev = Settings::ShaderManager::get().getMode();
         toggleMode(prev == Settings::ShaderManager::Mode::Debug ? Settings::ShaderManager::Mode::Normal : Settings::ShaderManager::Mode::Debug);
     }
 
@@ -226,7 +243,7 @@ namespace MWGui
 
     void PostProcessorHud::toggleMode(Settings::ShaderManager::Mode mode)
     {
-        Settings::ShaderManager::setMode(mode);
+        Settings::ShaderManager::get().setMode(mode);
 
         mModeToggle->setCaptionWithReplacing(mode == Settings::ShaderManager::Mode::Debug ? "#{sOn}" :"#{sOff}");
 
@@ -302,7 +319,7 @@ namespace MWGui
 
         mShaderInfo->setCaptionWithReplacing(ss.str());
 
-        if (Settings::ShaderManager::getMode() == Settings::ShaderManager::Mode::Debug)
+        if (Settings::ShaderManager::get().getMode() == Settings::ShaderManager::Mode::Debug)
         {
             if (technique->getUniformMap().size() > 0)
             {

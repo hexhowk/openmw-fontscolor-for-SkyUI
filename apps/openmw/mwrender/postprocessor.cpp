@@ -389,7 +389,7 @@ namespace MWRender
             node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerDepth", Unit_Depth));
 
             if (technique->getHDR())
-                node.mRootStateSet->addUniform(new osg::Uniform("omw_EyeAdaption", Unit_EyeAdaption));
+                node.mRootStateSet->addUniform(new osg::Uniform("omw_EyeAdaptation", Unit_EyeAdaptation));
 
             int texUnit = Unit_NextFree;
 

@@ -104,7 +104,7 @@ namespace fx
             template <class T>
             T getValue() const
             {
-                auto value = Settings::ShaderManager::getValue<T>(mTechniqueName, mName);
+                auto value = Settings::ShaderManager::get().getValue<T>(mTechniqueName, mName);
 
                 return value.value_or(std::get<Uniform<T>>(mData).getValue());
             }
@@ -138,7 +138,7 @@ namespace fx
                         arg.mValue = value;
 
                         if (mStatic)
-                            Settings::ShaderManager::setValue<T>(mTechniqueName, mName, value);
+                            Settings::ShaderManager::get().setValue<T>(mTechniqueName, mName, value);
                     }
                     else
                     {
@@ -197,7 +197,7 @@ namespace fx
                     }
                 }
 
-                bool useUniform = (Settings::ShaderManager::getMode() == Settings::ShaderManager::Mode::Debug || mStatic == false);
+                bool useUniform = (Settings::ShaderManager::get().getMode() == Settings::ShaderManager::Mode::Debug || mStatic == false);
 
                 return std::visit([&](auto&& arg) -> std::optional<std::string> {
                     using T = typename std::decay_t<decltype(arg)>::value_type;

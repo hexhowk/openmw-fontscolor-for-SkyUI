@@ -16,6 +16,7 @@
 #include <components/resource/scenemanager.hpp>
 
 #include "technique.hpp"
+#include "stateupdater.hpp"
 
 namespace
 {
@@ -77,32 +78,7 @@ namespace fx
 #version @version @profile
 @extensions
 
-struct _omw_data {
-    mat4 projectionMatrix;
-    mat4 invProjectionMatrix;
-    mat4 viewMatrix;
-    mat4 prevViewMatrix;
-    mat4 invViewMatrix;
-    vec4 eyePos;
-    vec4 eyeVec;
-    vec4 fogColor;
-    vec4 sunColor;
-    vec4 sunPos;
-    vec2 resolution;
-    vec2 rcpResolution;
-    float fogNear;
-    float fogFar;
-    float near;
-    float far;
-    float fov;
-    float gameHour;
-    float sunVis;
-    float waterHeight;
-    bool isUnderwater;
-    bool isInterior;
-    float simulationTime;
-    float deltaSimulationTime;
-};
+@uboStruct
 
 #define OMW_REVERSE_Z @reverseZ
 #define OMW_RADIAL_FOG @radialFog
@@ -135,13 +111,13 @@ struct _omw_data {
     }
 
 #if OMW_HDR
-    uniform sampler2D omw_EyeAdaption;
+    uniform sampler2D omw_EyeAdaptation;
 #endif
 
-    float omw_GetEyeAdaption()
+    float omw_GetEyeAdaptation()
     {
 #if OMW_HDR
-        return omw_Texture2D(omw_EyeAdaption, vec2(0.5, 0.5)).r;
+        return omw_Texture2D(omw_EyeAdaptation, vec2(0.5, 0.5)).r;
 #else
         return 1.0;
 #endif
@@ -156,6 +132,7 @@ struct _omw_data {
             {"@version", technique.getGLSLVersion()},
             {"@profile", technique.getGLSLProfile()},
             {"@extensions", extBlock.str()},
+            {"@uboStruct", StateUpdater::getStructDefinition()},
             {"@reverseZ", SceneUtil::AutoDepth::isReversed() ? "1" : "0"},
             {"@radialFog", Settings::Manager::getBool("radial fog", "Shaders") ? "1" : "0"},
             {"@ubo", mUBO ? "1" : "0"},
@@ -169,7 +146,7 @@ struct _omw_data {
             {"@vertex", mLegacyGLSL ? "gl_Vertex" : "omw_Vertex"},
             {"@fragColor", mLegacyGLSL ? "gl_FragColor" : "omw_FragColor"},
             {"@useBindings", mLegacyGLSL ? "0" : "1"},
-            {"@fragBinding", mLegacyGLSL ? "" : "out vec4 omw_FragColor;"},
+            {"@fragBinding", mLegacyGLSL ? "" : "out vec4 omw_FragColor;"}
         };
 
         for (const auto& [define, value]: defines)

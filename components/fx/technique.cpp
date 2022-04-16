@@ -107,7 +107,7 @@ namespace fx
         {
             std::string source(std::istreambuf_iterator<char>(*mVFS.get(getFileName())), {});
 
-            parse(source);
+            parse(std::move(source));
 
             if (mPassKeys.empty())
                 error("no pass list found, ensure you define one in a 'technique' block");
@@ -590,7 +590,7 @@ namespace fx
         uniform->mData = data;
         uniform->mTechniqueName = mName;
 
-        if (auto cached = Settings::ShaderManager::getValue<SrcT>(mName, uniform->mName))
+        if (auto cached = Settings::ShaderManager::get().getValue<SrcT>(mName, uniform->mName))
             uniform->setValue<SrcT>(cached.value());
 
         mDefinedUniforms.emplace_back(std::move(uniform));
@@ -682,7 +682,7 @@ namespace fx
         return std::holds_alternative<T>(mLexer->peek());
     }
 
-    void Technique::parse(std::string& buffer)
+    void Technique::parse(std::string&& buffer)
     {
         mBuffer = std::move(buffer);
         Misc::StringUtils::replaceAll(mBuffer, "\r\n", "\n");

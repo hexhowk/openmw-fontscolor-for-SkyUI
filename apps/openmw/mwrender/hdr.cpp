@@ -8,6 +8,10 @@
 namespace MWRender
 {
     HDRDriver::HDRDriver(Shader::ShaderManager& shaderManager)
+        : mCompiled(false)
+        , mEnabled(false)
+        , mWidth(1)
+        , mHeight(1)
     {
         const float hdrExposureTime = std::clamp(Settings::Manager::getFloat("hdr exposure time", "Post Processing"), 0.f, 1.f);
 
@@ -34,8 +38,10 @@ namespace MWRender
         mLuminanceProgram = shaderManager.getProgram(vertex, hdrLuminance);
     }
 
-    void HDRDriver::compile(int mipmapLevels, int w, int h) const
+    void HDRDriver::compile()
     {
+        int mipmapLevels = osg::Image::computeNumberOfMipmapLevels(mWidth, mHeight);
+
         for (auto& buffer : mBuffers)
         {
             buffer.texture = new osg::Texture2D;
@@ -44,7 +50,7 @@ namespace MWRender
             buffer.texture->setSourceType(GL_FLOAT);
             buffer.texture->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR_MIPMAP_NEAREST);
             buffer.texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR);
-            buffer.texture->setTextureSize(w, h);
+            buffer.texture->setTextureSize(mWidth, mHeight);
             buffer.texture->setNumMipmapLevels(mipmapLevels);
 
             buffer.finalTexture = new osg::Texture2D;
@@ -77,10 +83,18 @@ namespace MWRender
 
         mBuffers[0].mipmapStateset->setTextureAttributeAndModes(1, mBuffers[1].finalTexture);
         mBuffers[1].mipmapStateset->setTextureAttributeAndModes(1, mBuffers[0].finalTexture);
+
+        mCompiled = true;
     }
 
-    void HDRDriver::draw(const PingPongCanvas& canvas, osg::RenderInfo& renderInfo, osg::State& state, osg::GLExtensions* ext, size_t frameId) const
+    void HDRDriver::draw(const PingPongCanvas& canvas, osg::RenderInfo& renderInfo, osg::State& state, osg::GLExtensions* ext, size_t frameId)
     {
+        if (!mEnabled)
+            return;
+
+        if (!mCompiled)
+            compile();
+
         auto& hdrBuffer = mBuffers[frameId];
         hdrBuffer.fullscreenFbo->apply(state, osg::FrameBufferObject::DRAW_FRAMEBUFFER);
         hdrBuffer.fullscreenStateset->setTextureAttributeAndModes(0, canvas.getSceneTexture(frameId));

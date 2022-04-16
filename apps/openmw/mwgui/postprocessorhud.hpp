@@ -60,6 +60,10 @@ namespace MWGui
 
         void notifyKeyButtonPressed(MyGUI::Widget* sender, MyGUI::KeyCode key, MyGUI::Char ch);
 
+        void notifyActivatePressed(MyGUI::Widget* sender);
+
+        void notifyDeactivatePressed(MyGUI::Widget* sender);
+
         void select(ListWrapper* list, size_t index);
 
         void layout();
@@ -68,6 +72,9 @@ namespace MWGui
 
         ListWrapper* mActiveList;
         ListWrapper* mInactiveList;
+
+        Gui::AutoSizedButton* mButtonActivate;
+        Gui::AutoSizedButton* mButtonDeactivate;
 
         MyGUI::ScrollView* mConfigLayout;
 

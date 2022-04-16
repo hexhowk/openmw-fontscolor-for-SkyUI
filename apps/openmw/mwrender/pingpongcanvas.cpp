@@ -23,8 +23,8 @@ namespace MWRender
 
         addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, 0, 3));
 
-        if (usePostProcessing)
-            mHDRDriver = HDRDriver(shaderManager);
+        mHDRDriver = HDRDriver(shaderManager);
+        mHDRDriver.disable();
 
         auto fallbackVertex = shaderManager.getShader("fullscreen_tri_vertex.glsl", {}, osg::Shader::VERTEX);
         auto fallbackFragment = shaderManager.getShader("fullscreen_tri_fragment.glsl", {}, osg::Shader::FRAGMENT);
@@ -136,12 +136,7 @@ namespace MWRender
                 glClear(GL_COLOR_BUFFER_BIT);
             }
 
-            if (bufferData.hdr)
-            {
-                int w = bufferData.sceneTex->getTextureWidth();
-                int h = bufferData.sceneTex->getTextureHeight();
-                mHDRDriver.compile(osg::Image::computeNumberOfMipmapLevels(w, h), w, h);
-            }
+            mHDRDriver.dirty(bufferData.sceneTex->getTextureWidth(), bufferData.sceneTex->getTextureHeight());
 
             bufferData.dirty = false;
         }
@@ -151,10 +146,11 @@ namespace MWRender
             {GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT2_EXT},
             {GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT}
         }};
+        
+        (bufferData.hdr) ? mHDRDriver.enable() : mHDRDriver.disable();
 
         // A histogram based approach is superior way to calculate scene luminance. Using mipmaps is more broadly supported, so that's what we use for now.
-        if (bufferData.hdr)
-            mHDRDriver.draw(*this, renderInfo, state, ext, frameId);
+        mHDRDriver.draw(*this, renderInfo, state, ext, frameId);
 
         auto buffer = buffers[0];
 
@@ -189,7 +185,7 @@ namespace MWRender
             node.mRootStateSet->setTextureAttribute(PostProcessor::Unit_Depth, bufferData.depthTex);
 
             if (bufferData.hdr)
-                node.mRootStateSet->setTextureAttribute(PostProcessor::TextureUnits::Unit_EyeAdaption, mHDRDriver.getLuminanceTexture(frameId));
+                node.mRootStateSet->setTextureAttribute(PostProcessor::TextureUnits::Unit_EyeAdaptation, mHDRDriver.getLuminanceTexture(frameId));
 
             state.pushStateSet(node.mRootStateSet);
             state.apply();

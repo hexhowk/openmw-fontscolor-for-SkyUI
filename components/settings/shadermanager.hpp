@@ -17,6 +17,22 @@
 
 namespace Settings
 {
+    /*
+     * ShaderManager manages the shader.yaml file which is auto-generated next to the settings.cfg if it does not exist.
+     * This YAML file is simply a mapping of technique name to a list of uniforms and their values.
+     *
+     * config:
+     *   TECHNIQUE:
+     *    MY_FLOAT: 10.34
+     *    MY_VEC2:
+     *      - 0.23
+     *      - 0.32
+     *   TECHNIQUE2:
+     *    MY_VEC3:
+     *      - 0.22
+     *      - 0.33
+     *      - 0.20
+    */
     class ShaderManager
     {
     public:
@@ -27,62 +43,99 @@ namespace Settings
             Debug
         };
 
-        static Mode getMode()
+        ShaderManager() = default;
+        ShaderManager(ShaderManager const&) = delete;
+        void operator=(ShaderManager const&) = delete;
+
+        static ShaderManager& get()
+        {
+            static ShaderManager instance;
+            return instance;
+        }
+
+        Mode getMode()
         {
             return mMode;
         }
 
-        static void setMode(Mode mode)
+        void setMode(Mode mode)
         {
             mMode = mode;
         }
 
-        template <class T>
-        static void setValue(const std::string& tname, const std::string& uname, const T& value)
+        const YAML::Node& getRoot()
         {
-            ShaderManager::mData[tname][uname] = value;
+            return mData;
         }
 
         template <class T>
-        static std::optional<T> getValue(const std::string& tname, const std::string& uname)
+        void setValue(const std::string& tname, const std::string& uname, const T& value)
         {
-            if (!ShaderManager::mData[tname][uname])
-                return std::nullopt;
-            return ShaderManager::mData[tname][uname].as<T>();
-        }
-
-        void load(const std::string& userConfigPath)
-        {
-            auto path = ShaderManager::getPath(userConfigPath);
-            Log(Debug::Info) << "Loading shader settings file: " << path;
-
-            if (!std::filesystem::exists(path))
+            if (mData.IsNull())
             {
-                std::ofstream fout(path);
+                Log(Debug::Warning) << "Failed setting " << tname << ", " << uname << " : shader settings failed to load";
+                return;
             }
 
-            mData = YAML::LoadFile(path);
+            mData["config"][tname][uname] = value;
         }
 
-        void save(const std::string& userConfigPath)
+        template <class T>
+        std::optional<T> getValue(const std::string& tname, const std::string& uname)
         {
-            auto path = ShaderManager::getPath(userConfigPath);
-            Log(Debug::Info) << "Updating shader settings file: " << path;
+            try
+            {
+                auto value = mData["config"][tname][uname];
 
-            std::ofstream fout(path);
+                if (!value)
+                    return std::nullopt;
+
+                return value.as<T>();
+            }
+            catch(const YAML::BadConversion& e)
+            {
+                Log(Debug::Warning) << "Failed retrieving " << tname << ", " << uname << " : mismatched types in config file.";
+            }
+
+            return std::nullopt;
+        }
+
+        void load(const std::string& path)
+        {
+            mData = YAML::Null;
+            mPath = std::filesystem::path(path);
+
+            Log(Debug::Info) << "Loading shader settings file: " << mPath;
+
+            if (!std::filesystem::exists(mPath))
+                std::ofstream fout(mPath);
+
+            try
+            {
+                mData = YAML::LoadFile(mPath.string());
+                mData.SetStyle(YAML::EmitterStyle::Flow);
+
+                if (!mData["config"])
+                    mData["config"] = YAML::Node();
+            }
+            catch(const YAML::Exception& e)
+            {
+                Log(Debug::Error) << "Shader settings failed to load, " <<  e.msg;
+            }
+        }
+
+        void save()
+        {
+            Log(Debug::Info) << "Saving shader settings file: " << mPath;
+
+            std::ofstream fout(mPath.string());
             fout << mData;
         }
 
     private:
-
-        inline static std::filesystem::path getPath(const std::string& userConfigPath)
-        {
-            return std::filesystem::path(userConfigPath) / "shaders.yaml";
-        }
-
-        inline static YAML::Node mData;
-
-        inline static Mode mMode = Mode::Normal;
+        std::filesystem::path mPath;
+        YAML::Node mData;
+        Mode mMode = Mode::Normal;
     };
 }
 

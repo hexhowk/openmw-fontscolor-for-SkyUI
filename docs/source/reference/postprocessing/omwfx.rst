@@ -6,7 +6,7 @@ Overview
 ########
 
 Shaders are written in a OpenMW specific ``*.omwfx`` format. This is a light
-wrapper around GLSL, so a basic understanding of GLSL should be aquired before
+wrapper around GLSL, so a basic understanding of GLSL should be acquired before
 attempting to write any shaders. Every shader must be contained within a single
 ``*.omwfx`` file, ``#include`` directives are currently unsupported.
 
@@ -24,9 +24,9 @@ Builtin Samplers
 +-------------+-----------------------+---------------------------------------------+
 | GLSL Type   | Name                  | Description                                 |
 +=============+=======================+=============================================+
-| sampler2D   | omw_SamplerLastShader | Color output of last shader                 |
+| sampler2D   | omw_SamplerLastShader | Color output of the last shader             |
 +-------------+-----------------------+---------------------------------------------+
-| sampler2D   | omw_SamplerLastPass   | Color output of last pass                   |
+| sampler2D   | omw_SamplerLastPass   | Color output of the last pass               |
 +-------------+-----------------------+---------------------------------------------+
 | sampler2D   | omw_SamplerDepth      | Non-linear normalized depth                 |
 +-------------+-----------------------+---------------------------------------------+
@@ -37,57 +37,57 @@ Builtin Uniforms
 +-------------+--------------------------+--------------------------------------------------+
 | GLSL Type   | Name                     | Description                                      |
 +=============+==========================+==================================================+
-| mat4        | omw.projectionMatrix     | Cameras projection matrix                        |
+| mat4        | omw.projectionMatrix     | The camera's projection matrix                   |
 +-------------+--------------------------+--------------------------------------------------+
-| mat4        | omw.invProjectionMatrix  | Inverse of cameras projection matrix             |
+| mat4        | omw.invProjectionMatrix  | The inverse of the camera's projection matrix    |
 +-------------+--------------------------+--------------------------------------------------+
-| mat4        | omw.viewMatrix           | Cameras view matrix                              |
+| mat4        | omw.viewMatrix           | The camera's view matrix                         |
 +-------------+--------------------------+--------------------------------------------------+
-| mat4        | omw.prevViewMatrix       | Cameras previous frame view matrix               |
+| mat4        | omw.prevViewMatrix       | The camera's previous frame view matrix          |
 +-------------+--------------------------+--------------------------------------------------+
-| mat4        | omw.invViewMatrix        | Inverse of cameras view matrix                   |
+| mat4        | omw.invViewMatrix        | The inverse of the camera's view matrix          |
 +-------------+--------------------------+--------------------------------------------------+
-| vec4        | omw.eyePos               | Cameras eye position                             |
+| vec4        | omw.eyePos               | The camera's eye position                        |
 +-------------+--------------------------+--------------------------------------------------+
-| vec4        | omw.eyeVec               | Normalized cameras eye vector                    |
+| vec4        | omw.eyeVec               | The normalized camera's eye vector               |
 +-------------+--------------------------+--------------------------------------------------+
-| vec4        | omw.fogColor             | RGBA color of fog                                |
+| vec4        | omw.fogColor             | The RGBA color of fog                            |
 +-------------+--------------------------+--------------------------------------------------+
-| vec4        | omw.sunColor             | RGBA color of sun                                |
+| vec4        | omw.sunColor             | The RGBA color of sun                            |
 +-------------+--------------------------+--------------------------------------------------+
-| vec4        | omw.sunPos               | Normalized sun direction                         |
+| vec4        | omw.sunPos               | The normalized sun direction                     |
 |             |                          |                                                  |
-|             |                          | When sun is set `omw.sunpos.z` is negated        |
+|             |                          | When the sun is set `omw.sunpos.z` is negated    |
 +-------------+--------------------------+--------------------------------------------------+
-| vec2        | omw.resolution           | Render target resolution                         |
+| vec2        | omw.resolution           | The render target's resolution                   |
 +-------------+--------------------------+--------------------------------------------------+
-| vec2        | omw.rcpResolution        | Reciprocal of render target resolution           |
+| vec2        | omw.rcpResolution        | Reciprocal of the render target resolution       |
 +-------------+--------------------------+--------------------------------------------------+
-| vec2        | omw.fogNear              | Units at which fog begins to render              |
+| vec2        | omw.fogNear              | The units at which the fog begins to render      |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.fogFar               | Units at which fog ends                          |
+| float       | omw.fogFar               | The units at which the fog ends                  |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.near                 | Cameras near clip                                |
+| float       | omw.near                 | The camera's near clip                           |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.far                  | Cameras far clip                                 |
+| float       | omw.far                  | The camera's far clip                            |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.fov                  | Vertical field of view, in degrees               |
+| float       | omw.fov                  | The vertical field of view, in degrees           |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.gameHour             | Game hour in range [0,23]                        |
+| float       | omw.gameHour             | The game hour in range [0,24)                    |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.sunVis               | Sun visibility between [0, 1]                    |
+| float       | omw.sunVis               | The sun's visibility between [0, 1]              |
 |             |                          |                                                  |
 |             |                          | Influenced by types of weather                   |
 |             |                          |                                                  |
 |             |                          | Closer to zero during overcast weathers          |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.waterHeight          | Water height of current cell                     |
+| float       | omw.waterHeight          | The water height of current cell                 |
 |             |                          |                                                  |
 |             |                          | Exterior water level is always zero              |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.simulationTime       | Time in milliseconds since simulation began      |
+| float       | omw.simulationTime       | The time in milliseconds since simulation began  |
 +-------------+--------------------------+--------------------------------------------------+
-| float       | omw.deltaSimulationTime  | Change in `omw.simulationTime` from last frame   |
+| float       | omw.deltaSimulationTime  | The change in `omw.simulationTime`               |
 +-------------+--------------------------+--------------------------------------------------+
 | bool        | omw.isUnderwater         | True if player is submerged underwater           |
 +-------------+--------------------------+--------------------------------------------------+
@@ -134,7 +134,7 @@ The following functions can be accessed in any fragment or vertex shader.
 |                                        |                                                                               |
 |                                        |  Reverses sampled value when `OMW_REVERSE_Z` is set.                          |
 +----------------------------------------+-------------------------------------------------------------------------------+
-| float omw_GetEyeAdaption()             |  Returns the average scene luminance in range [0, 1].                         |
+| float omw_GetEyeAdaptation()           |  Returns the average scene luminance in range [0, 1].                         |
 |                                        |                                                                               |
 |                                        |  If HDR is not in use, this returns `1.0`                                     |
 |                                        |                                                                               |
@@ -144,8 +144,8 @@ The following functions can be accessed in any fragment or vertex shader.
 Special Attributes
 ##################
 
-To maintain maximum capatiblity for future releases, some OpenMW specific keywords, attributes, and functions must be used in place of their alternatives.
-Reference the table below to see these changes.
+To maintain maximum compatability with future releases, OpenMW defines specific keywords, attributes, and functions for you to use. These should be used instead of their
+GLSL equivalent. Refer to the table below to view these mappings.
 
 +-------------------+---------------------------------------------------------+
 | .omwfx            | Description                                             |
@@ -224,7 +224,7 @@ Below is an example of passing a value through a custom vertex shader to the fra
             omw_Position = vec4(omw_Vertex.xy, 0.0, 1.0);
             omw_TexCoord = omw_Position.xy * 0.5 + 0.5;
 
-            noise = sqrt(omw_Texture2D(noiseSampler, vec2(0.5, 0.5)));
+            noise = sqrt(omw_Texture2D(noiseSampler, vec2(0.5, 0.5)).r);
         }
     }
 
@@ -260,11 +260,11 @@ Exactly one ``technique`` block is required for every shader file. In this we de
 +------------------+--------------------+---------------------------------------------------+
 | glsl_Version     | integer            | GLSL version                                      |
 +------------------+--------------------+---------------------------------------------------+
-| glsl_profile     | string             | GLSL profile, like ``compatibility``              |
+| glsl_profile     | string             | GLSL profile, like ``compatability``              |
 +------------------+--------------------+---------------------------------------------------+
 | glsl_extensions  | literal list       | ``,`` separated list of required GLSL extensions  |
 +------------------+--------------------+---------------------------------------------------+
-| hdr              | boolean            | Whether HDR eye adaption is required.             |
+| hdr              | boolean            | Whether HDR eye adaptation is required.           |
 +------------------+--------------------+---------------------------------------------------+
 | flags            | `SHADER_FLAG`_     | Pipe separated list of shader flags               |
 +------------------+--------------------+---------------------------------------------------+

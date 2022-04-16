@@ -13,7 +13,7 @@ set(LUA_API_FILES
     openmw/util.lua
     openmw/world.lua
     openmw/types.lua
-    openmw/shader.lua
+    openmw/postprocessing.lua
 )
 
 foreach (f ${LUA_API_FILES})

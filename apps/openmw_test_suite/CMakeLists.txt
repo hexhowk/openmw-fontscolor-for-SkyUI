@@ -52,6 +52,7 @@ if (GTEST_FOUND AND GMOCK_FOUND)
         serialization/integration.cpp
 
         settings/parser.cpp
+        settings/shadermanager.cpp
 
         shader/parsedefines.cpp
         shader/parsefors.cpp

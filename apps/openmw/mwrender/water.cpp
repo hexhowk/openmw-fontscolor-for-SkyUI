@@ -658,7 +658,7 @@ public:
         if (mRefraction)
         {
             stateset->setTextureAttributeAndModes(2, mRefraction->getColorTexture(cv), osg::StateAttribute::ON);
-            stateset->setTextureAttributeAndModes(3, mRefraction->omw_GetDepthTexture(cv), osg::StateAttribute::ON);
+            stateset->setTextureAttributeAndModes(3, mRefraction->getDepthTexture(cv), osg::StateAttribute::ON);
         }
         stateset->getUniform("nodePosition")->set(osg::Vec3f(mWater->getPosition()));
     }

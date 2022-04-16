@@ -54,7 +54,7 @@ namespace MWRender
         mutable bool mLoggedErrorLastFrame;
         const bool mUsePostProcessing;
 
-        HDRDriver mHDRDriver;
+        mutable HDRDriver mHDRDriver;
 
         osg::ref_ptr<osg::Program> mFallbackProgram;
 

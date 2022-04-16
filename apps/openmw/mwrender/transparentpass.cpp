@@ -10,15 +10,14 @@
 namespace MWRender
 {
         TransparentDepthBinCallback::TransparentDepthBinCallback(Shader::ShaderManager& shaderManager, bool postPass)
-            : mPostPass(postPass)
+            : mStateSet(new osg::StateSet)
+            , mPostPass(postPass)
         {
             osg::ref_ptr<osg::Image> image = new osg::Image;
             image->allocateImage(1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
-            *(osg::Vec4ub*)image->data() = osg::Vec4ub(0xFF, 0xFF, 0xFF, 0xFF);
+            image->setColor(osg::Vec4(1,1,1,1), 0, 0);
 
             osg::ref_ptr<osg::Texture2D> dummyTexture = new osg::Texture2D(image);
-
-            mStateSet = new osg::StateSet;
 
             constexpr osg::StateAttribute::OverrideValue modeOff = osg::StateAttribute::OFF | osg::StateAttribute::OVERRIDE;
             constexpr osg::StateAttribute::OverrideValue modeOn = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE;

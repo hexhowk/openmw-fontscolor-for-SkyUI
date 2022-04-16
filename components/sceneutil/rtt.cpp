@@ -48,7 +48,7 @@ namespace SceneUtil
         return getViewDependentData(cv)->mCamera->getBufferAttachmentMap()[osg::Camera::COLOR_BUFFER]._texture;
     }
 
-    osg::Texture* RTTNode::omw_GetDepthTexture(osgUtil::CullVisitor* cv)
+    osg::Texture* RTTNode::getDepthTexture(osgUtil::CullVisitor* cv)
     {
         return getViewDependentData(cv)->mCamera->getBufferAttachmentMap()[osg::Camera::PACKED_DEPTH_STENCIL_BUFFER]._texture;
     }

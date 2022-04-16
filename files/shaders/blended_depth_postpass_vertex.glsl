@@ -1,10 +1,11 @@
 #version 120
 
 uniform mat4 projectionMatrix;
-uniform int colorMode;
 
 varying vec2 diffuseMapUV;
 varying float alphaPassthrough;
+
+#include "vertexcolors.glsl"
 
 void main()
 {

@@ -7,33 +7,6 @@
 
 namespace
 {
-    class ToggleShaderAction final : public MWLua::LuaManager::Action
-    {
-    public:
-        ToggleShaderAction(LuaUtil::LuaState* state, std::shared_ptr<fx::Technique> shader, bool enable, std::optional<int> pos = std::nullopt)
-            : MWLua::LuaManager::Action(state), mShader(std::move(shader)), mEnable(enable), mPos(pos) {}
-
-        void apply(MWLua::WorldView&) const override
-        {
-            MWRender::PostProcessor* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
-
-            if (mEnable)
-                processor->enableTechnique(mShader, mPos);
-            else
-                processor->disableTechnique(mShader);
-        }
-
-        std::string toString() const override
-        {
-            return std::string("ToggleShaderAction shader=") + (mShader ? mShader->getName() : "nil");
-        }
-
-    private:
-        std::shared_ptr<fx::Technique> mShader;
-        bool mEnable;
-        std::optional<int> mPos;
-    };
-
     template <class T>
     class SetUniformShaderAction final : public MWLua::LuaManager::Action
     {
@@ -57,28 +30,17 @@ namespace
         std::string mName;
         T mValue;
     };
+}
 
-    class LoadShaderAction final : public MWLua::LuaManager::Action
-    {
-    public:
-        LoadShaderAction(LuaUtil::LuaState* state, std::shared_ptr<fx::Technique> shader)
-            : MWLua::LuaManager::Action(state), mShader(std::move(shader)) {}
+namespace MWLua
+{
+    struct Shader;
+}
 
-        void apply(MWLua::WorldView&) const override
-        {
-            MWRender::PostProcessor* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
-
-            processor->addTemplate(std::move(mShader));
-        }
-
-        std::string toString() const override
-        {
-            return std::string("LoadShaderAction shader=") + (mShader ? mShader->getName() : "nil");
-        }
-
-    private:
-        std::shared_ptr<fx::Technique> mShader;
-    };
+namespace sol
+{
+    template <>
+    struct is_automagical<MWLua::Shader> : std::false_type {};
 }
 
 namespace MWLua
@@ -100,7 +62,7 @@ namespace MWLua
         bool mQueuedAction = false;
     };
 
-    sol::table initShaderPackage(const Context& context)
+    sol::table initPostprocessingPackage(const Context& context)
     {
         sol::table api(context.mLua->sol(), sol::create);
 
@@ -115,13 +77,21 @@ namespace MWLua
 
             if (shader.mShader && shader.mShader->isValid())
                 shader.mQueuedAction = true;
-            context.mLuaManager->addAction(std::make_unique<ToggleShaderAction>(context.mLua, shader.mShader, true, pos));
+
+            context.mLuaManager->addAction(
+                [&] { MWBase::Environment::get().getWorld()->getPostProcessor()->enableTechnique(shader.mShader, pos); },
+                "Enable shader " + (shader.mShader ? shader.mShader->getName() : "nil")
+            );
         };
 
         shader["disable"] = [context](Shader& shader)
         {
             shader.mQueuedAction = false;
-            context.mLuaManager->addAction(std::make_unique<ToggleShaderAction>(context.mLua, shader.mShader, false));
+
+            context.mLuaManager->addAction(
+                [&] { MWBase::Environment::get().getWorld()->getPostProcessor()->disableTechnique(shader.mShader); },
+                "Disable shader " + (shader.mShader ? shader.mShader->getName() : "nil")
+            );
         };
 
         shader["isEnabled"] = [](const Shader& shader)
@@ -140,10 +110,14 @@ namespace MWLua
 
         api["load"] = [context](const std::string& name)
         {
-            auto processor = MWBase::Environment::get().getWorld()->getPostProcessor();
+            auto* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
             auto technique = processor->loadTechnique(name, false);
 
-            context.mLuaManager->addAction(std::make_unique<LoadShaderAction>(context.mLua, technique));
+            context.mLuaManager->addAction(
+                [&] { MWBase::Environment::get().getWorld()->getPostProcessor()->disableTechnique(technique); },
+                "Load shader " + (technique ? technique->getName() : "nil")
+            );
+
             return Shader(technique);
         };
 

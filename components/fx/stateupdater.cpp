@@ -5,8 +5,6 @@
 
 #include <components/resource/scenemanager.hpp>
 
-#include <cassert>
-
 namespace fx
 {
     StateUpdater::StateUpdater(bool useUBO) : mUseUBO(useUBO) {}
@@ -15,11 +13,9 @@ namespace fx
     {
         if (mUseUBO)
         {
-            static_assert(std::is_standard_layout<UniformData>::value);
-
             osg::ref_ptr<osg::UniformBufferObject> ubo = new osg::UniformBufferObject;
 
-            osg::ref_ptr<UBOData> data = new osg::BufferTemplate<UniformData>();
+            osg::ref_ptr<osg::BufferTemplate<UniformData::value_type>> data = new osg::BufferTemplate<UniformData::value_type>();
             data->setBufferObject(ubo);
 
             osg::ref_ptr<osg::UniformBufferBinding> ubb = new osg::UniformBufferBinding(static_cast<int>(Resource::SceneManager::UBOBinding::PostProcessor), data, 0, sizeof(UniformData));
@@ -28,30 +24,30 @@ namespace fx
         }
         else
         {
-            stateset->addUniform(new osg::Uniform("omw.projectionMatrix", mData.projectionMatrix));
-            stateset->addUniform(new osg::Uniform("omw.invProjectionMatrix", mData.invProjectionMatrix));
-            stateset->addUniform(new osg::Uniform("omw.viewMatrix", mData.viewMatrix));
-            stateset->addUniform(new osg::Uniform("omw.prevViewMatrix", mData.prevViewMatrix));
-            stateset->addUniform(new osg::Uniform("omw.invViewMatrix", mData.invViewMatrix));
-            stateset->addUniform(new osg::Uniform("omw.eyePos", mData.eyePos));
-            stateset->addUniform(new osg::Uniform("omw.eyeVec", mData.eyeVec));
-            stateset->addUniform(new osg::Uniform("omw.fogColor", mData.fogColor));
-            stateset->addUniform(new osg::Uniform("omw.sunColor", mData.sunColor));
-            stateset->addUniform(new osg::Uniform("omw.sunPos", mData.sunPos));
-            stateset->addUniform(new osg::Uniform("omw.resolution", mData.resolution));
-            stateset->addUniform(new osg::Uniform("omw.rcpResolution", mData.rcpResolution));
-            stateset->addUniform(new osg::Uniform("omw.fogNear", mData.fogNear));
-            stateset->addUniform(new osg::Uniform("omw.fogFar", mData.fogFar));
-            stateset->addUniform(new osg::Uniform("omw.near", mData.near));
-            stateset->addUniform(new osg::Uniform("omw.far", mData.far));
-            stateset->addUniform(new osg::Uniform("omw.fov", mData.fov));
-            stateset->addUniform(new osg::Uniform("omw.gameHour", mData.gameHour));
-            stateset->addUniform(new osg::Uniform("omw.sunVis", mData.sunVis));
-            stateset->addUniform(new osg::Uniform("omw.waterHeight", mData.waterHeight));
-            stateset->addUniform(new osg::Uniform("omw.isUnderwater", mData.isUnderwater));
-            stateset->addUniform(new osg::Uniform("omw.isInterior", mData.isInterior));
-            stateset->addUniform(new osg::Uniform("omw.simulationTime", mData.simulationTime));
-            stateset->addUniform(new osg::Uniform("omw.deltaSimulationTime", mData.deltaSimulationTime));
+            stateset->addUniform(new osg::Uniform("omw.projectionMatrix", mData.get<ProjectionMatrix>()));
+            stateset->addUniform(new osg::Uniform("omw.invProjectionMatrix", mData.get<InvProjectionMatrix>()));
+            stateset->addUniform(new osg::Uniform("omw.viewMatrix", mData.get<ViewMatrix>()));
+            stateset->addUniform(new osg::Uniform("omw.prevViewMatrix", mData.get<PrevViewMatrix>()));
+            stateset->addUniform(new osg::Uniform("omw.invViewMatrix", mData.get<InvViewMatrix>()));
+            stateset->addUniform(new osg::Uniform("omw.eyePos", mData.get<EyePos>()));
+            stateset->addUniform(new osg::Uniform("omw.eyeVec", mData.get<EyeVec>()));
+            stateset->addUniform(new osg::Uniform("omw.fogColor", mData.get<FogColor>()));
+            stateset->addUniform(new osg::Uniform("omw.sunColor", mData.get<SunColor>()));
+            stateset->addUniform(new osg::Uniform("omw.sunPos", mData.get<SunPos>()));
+            stateset->addUniform(new osg::Uniform("omw.resolution", mData.get<Resolution>()));
+            stateset->addUniform(new osg::Uniform("omw.rcpResolution", mData.get<RcpResolution>()));
+            stateset->addUniform(new osg::Uniform("omw.fogNear", mData.get<FogNear>()));
+            stateset->addUniform(new osg::Uniform("omw.fogFar", mData.get<FogFar>()));
+            stateset->addUniform(new osg::Uniform("omw.near", mData.get<Near>()));
+            stateset->addUniform(new osg::Uniform("omw.far", mData.get<Far>()));
+            stateset->addUniform(new osg::Uniform("omw.fov", mData.get<Fov>()));
+            stateset->addUniform(new osg::Uniform("omw.gameHour", mData.get<GameHour>()));
+            stateset->addUniform(new osg::Uniform("omw.sunVis", mData.get<SunVis>()));
+            stateset->addUniform(new osg::Uniform("omw.waterHeight", mData.get<WaterHeight>()));
+            stateset->addUniform(new osg::Uniform("omw.isUnderwater", mData.get<IsUnderwater>()));
+            stateset->addUniform(new osg::Uniform("omw.isInterior", mData.get<IsInterior>()));
+            stateset->addUniform(new osg::Uniform("omw.simulationTime", mData.get<SimulationTime>()));
+            stateset->addUniform(new osg::Uniform("omw.deltaSimulationTime", mData.get<DeltaSimulationTime>()));
         }
     }
 
@@ -60,37 +56,38 @@ namespace fx
         if (mUseUBO)
         {
             osg::UniformBufferBinding* ubb = dynamic_cast<osg::UniformBufferBinding*>(stateset->getAttribute(osg::StateAttribute::UNIFORMBUFFERBINDING, static_cast<int>(Resource::SceneManager::UBOBinding::PostProcessor)));
-            UniformData& data = static_cast<UBOData*>(ubb->getBufferData())->getData();
-            data = mData;
+
+            auto& dest = static_cast<osg::BufferTemplate<UniformData::value_type>*>(ubb->getBufferData())->getData();
+            mData.copy(dest.data());
 
             ubb->getBufferData()->dirty();
         }
         else
         {
-            stateset->getUniform("omw.projectionMatrix")->set(mData.projectionMatrix);
-            stateset->getUniform("omw.invProjectionMatrix")->set(mData.invProjectionMatrix);
-            stateset->getUniform("omw.viewMatrix")->set(mData.viewMatrix);
-            stateset->getUniform("omw.prevViewMatrix")->set(mData.prevViewMatrix);
-            stateset->getUniform("omw.invViewMatrix")->set(mData.viewMatrix);
-            stateset->getUniform("omw.eyePos")->set(mData.eyePos);
-            stateset->getUniform("omw.eyeVec")->set(mData.eyeVec);
-            stateset->getUniform("omw.fogColor")->set(mData.fogColor);
-            stateset->getUniform("omw.sunColor")->set(mData.sunColor);
-            stateset->getUniform("omw.sunPos")->set(mData.sunPos);
-            stateset->getUniform("omw.resolution")->set(mData.resolution);
-            stateset->getUniform("omw.rcpResolution")->set(mData.rcpResolution);
-            stateset->getUniform("omw.fogNear")->set(mData.fogNear);
-            stateset->getUniform("omw.fogFar")->set(mData.fogFar);
-            stateset->getUniform("omw.near")->set(mData.near);
-            stateset->getUniform("omw.far")->set(mData.far);
-            stateset->getUniform("omw.fov")->set(mData.fov);
-            stateset->getUniform("omw.gameHour")->set(mData.gameHour);
-            stateset->getUniform("omw.sunVis")->set(mData.sunVis);
-            stateset->getUniform("omw.waterHeight")->set(mData.waterHeight);
-            stateset->getUniform("omw.isUnderwater")->set(mData.isUnderwater);
-            stateset->getUniform("omw.isInterior")->set(mData.isInterior);
-            stateset->getUniform("omw.simulationTime")->set(mData.simulationTime);
-            stateset->getUniform("omw.deltaSimulationTime")->set(mData.deltaSimulationTime);
+            stateset->getUniform("omw.projectionMatrix")->set(mData.get<ProjectionMatrix>());
+            stateset->getUniform("omw.invProjectionMatrix")->set(mData.get<InvProjectionMatrix>());
+            stateset->getUniform("omw.viewMatrix")->set(mData.get<ViewMatrix>());
+            stateset->getUniform("omw.prevViewMatrix")->set(mData.get<PrevViewMatrix>());
+            stateset->getUniform("omw.invViewMatrix")->set(mData.get<ViewMatrix>());
+            stateset->getUniform("omw.eyePos")->set(mData.get<EyePos>());
+            stateset->getUniform("omw.eyeVec")->set(mData.get<EyeVec>());
+            stateset->getUniform("omw.fogColor")->set(mData.get<FogColor>());
+            stateset->getUniform("omw.sunColor")->set(mData.get<SunColor>());
+            stateset->getUniform("omw.sunPos")->set(mData.get<SunPos>());
+            stateset->getUniform("omw.resolution")->set(mData.get<Resolution>());
+            stateset->getUniform("omw.rcpResolution")->set(mData.get<RcpResolution>());
+            stateset->getUniform("omw.fogNear")->set(mData.get<FogNear>());
+            stateset->getUniform("omw.fogFar")->set(mData.get<FogFar>());
+            stateset->getUniform("omw.near")->set(mData.get<Near>());
+            stateset->getUniform("omw.far")->set(mData.get<Far>());
+            stateset->getUniform("omw.fov")->set(mData.get<Fov>());
+            stateset->getUniform("omw.gameHour")->set(mData.get<GameHour>());
+            stateset->getUniform("omw.sunVis")->set(mData.get<SunVis>());
+            stateset->getUniform("omw.waterHeight")->set(mData.get<WaterHeight>());
+            stateset->getUniform("omw.isUnderwater")->set(mData.get<IsUnderwater>());
+            stateset->getUniform("omw.isInterior")->set(mData.get<IsInterior>());
+            stateset->getUniform("omw.simulationTime")->set(mData.get<SimulationTime>());
+            stateset->getUniform("omw.deltaSimulationTime")->set(mData.get<DeltaSimulationTime>());
         }
     }
 }

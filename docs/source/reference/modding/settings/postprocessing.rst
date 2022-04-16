@@ -1,5 +1,5 @@
-Post Processing
-###############
+Post Processing Settings
+########################
 
 enabled
 -------
@@ -20,7 +20,7 @@ Controls which post process effects are active and their order.
 It is recommended to configure the settings and order of shaders through the in game HUD. By default this is available with the F2 key.
 Note, an empty chain will not disable post processing.
 
-This setting no effect if :ref:`enabled` is set to false.
+This setting has no effect if :ref:`enabled` is set to false.
 
 live reload
 -----------
@@ -41,12 +41,12 @@ hdr exposure time
 :Range:     0.0 to 1.0
 :Default:   0.1
 
-Use for eye adaption to control speed at which average scene luminance can change from one frame to the next.
-Average scene luminance is used in some shader effects for features such as dynamic eye adaption.
+Use for eye adaptation to control speed at which average scene luminance can change from one frame to the next.
+Average scene luminance is used in some shader effects for features such as dynamic eye adaptation.
 Smaller values will cause slower changes in scene luminance. This is most impactful when the brightness
 drastically changes quickly, like when entering a dark cave or exiting an interior and looking into a bright sun.
 
-This settings has effect when HDR is not being utilized or :ref:`enabled` is set to false.
+This settings has no effect when HDR is disabled or :ref:`enabled` is set to false.
 
 transparent postpass
 --------------------

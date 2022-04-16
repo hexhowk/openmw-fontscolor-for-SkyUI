@@ -173,7 +173,7 @@ namespace fx
         template <class T>
         bool isNext();
 
-        void parse(std::string& buffer);
+        void parse(std::string&& buffer);
 
         template <class SrcT, class T>
         void parseUniform();

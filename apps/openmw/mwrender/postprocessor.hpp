@@ -84,7 +84,7 @@ namespace MWRender
             Unit_LastShader = 0,
             Unit_LastPass,
             Unit_Depth,
-            Unit_EyeAdaption,
+            Unit_EyeAdaptation,
             Unit_NextFree
         };
 
@@ -121,6 +121,9 @@ namespace MWRender
         template <class T>
         void setUniform(std::shared_ptr<fx::Technique> technique, const std::string& name, const T& value)
         {
+            if (!isEnabled())
+                return;
+
             auto it = technique->findUniform(name);
 
             if (it == technique->getUniformMap().end())
