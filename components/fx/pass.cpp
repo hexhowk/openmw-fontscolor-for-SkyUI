@@ -128,14 +128,14 @@ namespace fx
         for (const auto& extension : technique.getGLSLExtensions())
             extBlock << "#ifdef " << extension << '\n' << "\t#extension " << extension << ": enable" << '\n' << "#endif" << '\n';
 
-        const std::unordered_map<std::string, std::string> defines = {
+        const std::vector<std::pair<std::string,std::string>> defines = {
             {"@version", technique.getGLSLVersion()},
             {"@profile", technique.getGLSLProfile()},
             {"@extensions", extBlock.str()},
             {"@uboStruct", StateUpdater::getStructDefinition()},
+            {"@ubo", mUBO ? "1" : "0"},
             {"@reverseZ", SceneUtil::AutoDepth::isReversed() ? "1" : "0"},
             {"@radialFog", Settings::Manager::getBool("radial fog", "Shaders") ? "1" : "0"},
-            {"@ubo", mUBO ? "1" : "0"},
             {"@hdr", technique.getHDR() ? "1" : "0"},
             {"@in", mLegacyGLSL ? "varying" : "in"},
             {"@out", mLegacyGLSL ? "varying" : "out"},
