@@ -81,7 +81,7 @@ void Settings::SettingsFileParser::loadSettingsFile(const std::string& file, Cat
     }
 }
 
-void Settings::SettingsFileParser::saveSettingsFile(const std::string& file, const CategorySettingValueMap& settings, bool igoreInvalid, bool printHint)
+void Settings::SettingsFileParser::saveSettingsFile(const std::string& file, const CategorySettingValueMap& settings)
 {
     using CategorySettingStatusMap = std::map<CategorySetting, bool>;
 
@@ -231,7 +231,7 @@ void Settings::SettingsFileParser::saveSettingsFile(const std::string& file, con
         // happen if the player edited the file while playing, because loadSettingsFile()
         // will accept anything and pass it along in the map, but in the future, we might
         // want to handle invalid settings more gracefully here.
-        if (!igoreInvalid && finder == written.end()) {
+        if (finder == written.end()) {
             ostream << "# invalid setting: " << line << std::endl;
             changed = true;
             continue;
@@ -271,7 +271,7 @@ void Settings::SettingsFileParser::saveSettingsFile(const std::string& file, con
 
     // If there was absolutely nothing in the file (or more likely the file didn't
     // exist), start the newly created file with a helpful comment.
-    if (!existing && printHint) {
+    if (!existing) {
         ostream << "# This is the OpenMW user 'settings.cfg' file.  This file only contains" << std::endl;
         ostream << "# explicitly changed settings.  If you would like to revert a setting" << std::endl;
         ostream << "# to its default, simply remove it from this file.  For available" << std::endl;
