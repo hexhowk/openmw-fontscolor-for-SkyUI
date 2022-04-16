@@ -113,7 +113,7 @@ namespace Settings
             try
             {
                 mData = YAML::LoadFile(mPath.string());
-                mData.SetStyle(YAML::EmitterStyle::Flow);
+                mData.SetStyle(YAML::EmitterStyle::Block);
 
                 if (!mData["config"])
                     mData["config"] = YAML::Node();
@@ -128,8 +128,12 @@ namespace Settings
         {
             Log(Debug::Info) << "Saving shader settings file: " << mPath;
 
+            YAML::Emitter out;
+            out.SetMapFormat(YAML::Block);
+            out << mData;
+
             std::ofstream fout(mPath.string());
-            fout << mData;
+            fout << out.c_str();
         }
 
     private:
