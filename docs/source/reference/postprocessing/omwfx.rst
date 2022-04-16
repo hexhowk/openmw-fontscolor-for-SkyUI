@@ -266,7 +266,7 @@ Exactly one ``technique`` block is required for every shader file. In this we de
 +------------------+--------------------+---------------------------------------------------+
 | hdr              | boolean            | Whether HDR eye adaptation is required.           |
 +------------------+--------------------+---------------------------------------------------+
-| flags            | `SHADER_FLAG`_     | Pipe separated list of shader flags               |
+| flags            | `SHADER_FLAG`_     | ``,`` separated list of shader flags              |
 +------------------+--------------------+---------------------------------------------------+
 
 In the code snippet below, a shader is defined that requires GLSL `330`, HDR capatiblities, and is only enabled underwater in exteriors.
