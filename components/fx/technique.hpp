@@ -139,7 +139,7 @@ namespace fx
 
         std::string_view getVersion() const { return mVersion; }
 
-        std::string getGLSLVersion() const { return mGLSLVersion; }
+        int getGLSLVersion() const { return mGLSLVersion; }
         std::string getGLSLProfile() const { return mGLSLProfile; }
         const std::unordered_set<std::string>& getGLSLExtensions() const { return mGLSLExtensions; }
 
@@ -233,7 +233,7 @@ namespace fx
         std::string_view mVersion;
 
         std::unordered_set<std::string> mGLSLExtensions;
-        std::string mGLSLVersion;
+        int mGLSLVersion;
         std::string mGLSLProfile;
 
         FlagsType mFlags;

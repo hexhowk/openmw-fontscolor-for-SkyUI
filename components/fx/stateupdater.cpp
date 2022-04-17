@@ -58,7 +58,7 @@ namespace fx
             osg::UniformBufferBinding* ubb = dynamic_cast<osg::UniformBufferBinding*>(stateset->getAttribute(osg::StateAttribute::UNIFORMBUFFERBINDING, static_cast<int>(Resource::SceneManager::UBOBinding::PostProcessor)));
 
             auto& dest = static_cast<osg::BufferTemplate<UniformData::value_type>*>(ubb->getBufferData())->getData();
-            mData.copy(dest.data());
+            dest = mData.getBuffer();
 
             ubb->getBufferData()->dirty();
         }

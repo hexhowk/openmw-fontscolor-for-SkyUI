@@ -69,7 +69,8 @@ namespace MWRender
     PostProcessor::PostProcessor(RenderingManager& rendering, osgViewer::Viewer* viewer, osg::Group* rootNode, const VFS::Manager* vfs)
         : mDepthFormat(GL_DEPTH24_STENCIL8)
         , mSamples(Settings::Manager::getInt("antialiasing", "Video"))
-        , mDirty{true, true}
+        , mDirty(false)
+        , mDirtyFrameId(0)
         , mRendering(rendering)
         , mViewer(viewer)
         , mVFS(vfs)
@@ -90,7 +91,9 @@ namespace MWRender
         unsigned int contextID = gc->getState()->getContextID();
         osg::GLExtensions* ext = gc->getState()->get<osg::GLExtensions>();
 
-        mUBO = ext && ext->isUniformBufferObjectSupported && ext->glslLanguageVersion >= 3.3f;
+        mGLSLVersion = ext->glslLanguageVersion * 100;
+
+        mUBO = ext && ext->isUniformBufferObjectSupported && mGLSLVersion >= 330;
         mStateUpdater = new fx::StateUpdater(mUBO);
 
         if (!SceneUtil::AutoDepth::isReversed() && !softParticles && !usePostProcessing)
@@ -213,7 +216,9 @@ namespace MWRender
         if (resizeAttachments)
             createTexturesAndCamera(width, height);
 
-        createObjectsForFrame(frame() % 2, width, height);
+        size_t frameId = frame() % 2;
+
+        createObjectsForFrame(frameId, width, height);
 
         mHUDCamera->resize(width, height);
         mViewer->getCamera()->resize(width, height);
@@ -222,8 +227,10 @@ namespace MWRender
 
         dirtyTechniques();
 
-        mPingPongCanvas->dirty(frame());
-        mDirty[(frame() + 1) % 2] = true;
+        mPingPongCanvas->dirty(frameId);
+
+        mDirty = true;
+        mDirtyFrameId = !frameId;
     }
 
     void PostProcessor::update()
@@ -281,10 +288,10 @@ namespace MWRender
 
         size_t frameId = frame() % 2;
 
-        if (mDirty[frameId])
+        if (mDirty && mDirtyFrameId == frameId)
         {
             createObjectsForFrame(frameId, width(), height());
-            mDirty[frameId] = false;
+            mDirty = false;
         }
 
         mPingPongCanvas->setMask(frameId, mUnderwater, mExteriorFlag);
@@ -346,7 +353,7 @@ namespace MWRender
         if (textures[Tex_OpaqueDepth])
             fbos[FBO_OpaqueDepth]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER, osg::FrameBufferAttachment(new osg::RenderBuffer(textures[Tex_OpaqueDepth]->getTextureWidth(), textures[Tex_OpaqueDepth]->getTextureHeight(), textures[Tex_Scene]->getInternalFormat())));
 #endif
-    
+
         if (mResolveCullCallback)
             mResolveCullCallback->setFbo(frameId, mFbos[frameId][FBO_Primary]);
 
@@ -372,6 +379,12 @@ namespace MWRender
         {
             if (!technique->isValid())
                 continue;
+
+            if (technique->getGLSLVersion() > mGLSLVersion)
+            {
+                Log(Debug::Warning) << "Technique " << technique->getName() << " requires GLSL version " << technique->getGLSLVersion() << " which is unsupported by your hardware.";
+                continue;
+            }
 
             fx::DispatchNode node;
 
@@ -451,7 +464,9 @@ namespace MWRender
             data.emplace_back(std::move(node));
         }
 
-        mPingPongCanvas->setCurrentFrameData(frame() % 2, std::move(data));
+        size_t frameId = frame() % 2;
+
+        mPingPongCanvas->setCurrentFrameData(frameId, std::move(data));
 
         if (auto hud = MWBase::Environment::get().getWindowManager()->getPostProcessorHud())
             hud->updateTechniques();

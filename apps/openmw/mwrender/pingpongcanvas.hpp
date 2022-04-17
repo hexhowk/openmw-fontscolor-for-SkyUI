@@ -2,6 +2,7 @@
 #define OPENMW_MWRENDER_PINGPONGCANVAS_H
 
 #include <array>
+#include <optional>
 
 #include <osg/Geometry>
 #include <osg/Texture2D>
@@ -26,10 +27,11 @@ namespace MWRender
 
         void drawImplementation(osg::RenderInfo& renderInfo) const override;
 
-        void dirty(size_t frame) { mBufferData[frame % 2].dirty = true; }
+        void dirty(size_t frameId) { mBufferData[frameId].dirty = true; }
 
         const fx::DispatchArray& getCurrentFrameData(size_t frame) { return mBufferData[frame % 2].data; }
 
+        // Sets current frame pass data and stores copy of dispatch array to apply to next frame data
         void setCurrentFrameData(size_t frameId, fx::DispatchArray&& data);
 
         void setMask(size_t frameId, bool underwater, bool exterior);
@@ -61,7 +63,6 @@ namespace MWRender
         struct BufferData
         {
             bool dirty = false;
-            std::optional<fx::DispatchArray> nextFrameData = std::nullopt;
             fx::DispatchArray data;
 
             fx::FlagsType mask;
@@ -78,6 +79,9 @@ namespace MWRender
 
         mutable std::array<BufferData, 2> mBufferData;
         mutable std::array<osg::ref_ptr<osg::FrameBufferObject>, 3> mFbos;
+
+        mutable std::optional<fx::DispatchArray> mQueuedDispatchArray;
+        mutable size_t mQueuedDispatchFrameId;
     };
 }
 

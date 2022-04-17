@@ -10,6 +10,8 @@ namespace MWRender
     PingPongCanvas::PingPongCanvas(bool usePostProcessing, Shader::ShaderManager& shaderManager)
         : mLoggedErrorLastFrame(false)
         , mUsePostProcessing(usePostProcessing)
+        , mQueuedDispatchArray(std::nullopt)
+        , mQueuedDispatchFrameId(0)
     {
         setUseDisplayList(false);
         setUseVertexBufferObjects(true);
@@ -33,17 +35,10 @@ namespace MWRender
 
     void PingPongCanvas::setCurrentFrameData(size_t frameId, fx::DispatchArray&& data)
     {
-        mBufferData[frameId].nextFrameData = fx::DispatchArray(data);
-        mBufferData[frameId].data = std::move(data);
-    }
+        mQueuedDispatchArray = fx::DispatchArray(data);
+        mQueuedDispatchFrameId = !frameId;
 
-    void PingPongCanvas::copyNewFrameData(size_t frameId) const
-    {
-        if (mBufferData[!frameId].nextFrameData.has_value())
-        {
-            mBufferData[frameId].data = std::move(mBufferData[!frameId].nextFrameData.value());
-            mBufferData[!frameId].nextFrameData = std::nullopt;
-        }
+        mBufferData[frameId].data = std::move(data);
     }
 
     void PingPongCanvas::setMask(size_t frameId, bool underwater, bool exterior)
@@ -66,9 +61,14 @@ namespace MWRender
 
         size_t frameId = state.getFrameStamp()->getFrameNumber() % 2;
 
-        copyNewFrameData(frameId);
-
         auto& bufferData = mBufferData[frameId];
+
+        if (mQueuedDispatchArray && mQueuedDispatchFrameId == frameId)
+        {
+            mBufferData[frameId].data = std::move(mQueuedDispatchArray.value());
+            mQueuedDispatchArray = std::nullopt;
+        }
+
         const auto& data = bufferData.data;
 
         std::vector<size_t> filtered;

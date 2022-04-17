@@ -53,14 +53,13 @@ namespace std140
             return structDefinition + "};";
         }
 
-        template <class T>
-        constexpr auto copy(T* dest) {
+        constexpr auto getBuffer() {
             std::array<char, (sizeof(CArgs) + ...)> buffer;
-            char* dst = dest;
+            char* dst = buffer.data();
             const auto copy = [&] (const auto& v) {
                 static_assert(std::is_standard_layout_v<std::decay_t<decltype(v)>>);
                 std::memcpy(dst, &v, sizeof(v));
-                dst += sizeof(v) /* + alignment*/;
+                dst += sizeof(v);
             };
             std::apply([&] (const auto& ... v) { (copy(v) , ...); }, mData);
             return buffer;
@@ -70,21 +69,20 @@ namespace std140
         template <class T>
         static constexpr std::string_view getTypeName()
         {
-            if constexpr (std::is_same_v<T, std140_mat4>) {
+            if constexpr (std::is_same_v<T, std140_mat4>)
                 return "mat4";
-            } else if constexpr (std::is_same_v<T, std140_vec4>) {
+            else if constexpr (std::is_same_v<T, std140_vec4>)
                 return "vec4";
-            } else if constexpr (std::is_same_v<T, std140_vec2>) {
+            else if constexpr (std::is_same_v<T, std140_vec2>)
                 return "vec2";
-            } else if constexpr (std::is_same_v<T, std140_float>) {
+            else if constexpr (std::is_same_v<T, std140_float>)
                 return "float";
-            } else if constexpr (std::is_same_v<T, std140_int>) {
+            else if constexpr (std::is_same_v<T, std140_int>)
                 return "int";
-            } else if constexpr (std::is_same_v<T, std140_bool>) {
+            else if constexpr (std::is_same_v<T, std140_bool>)
                 return "bool";
-            } else {
-                static_assert(std::is_void_v<T> && !std::is_void_v<T>, "Unsupported field type");
-            }
+            else
+                static_assert(!std::is_same_v<T, T>, "Unsupported field type");
         }
 
         template <class T>

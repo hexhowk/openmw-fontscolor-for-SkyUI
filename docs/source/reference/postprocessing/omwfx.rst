@@ -10,6 +10,11 @@ wrapper around GLSL, so a basic understanding of GLSL should be acquired before
 attempting to write any shaders. Every shader must be contained within a single
 ``*.omwfx`` file, ``#include`` directives are currently unsupported.
 
+By default, all shaders only guarantee support of GLSL 120 features. To target a
+newer GLSL version, you must specify it in the `technique`_ block properties. If
+the specified version is not supported on the target machine, the shader will
+not load.
+
 Reserved Keywords
 #################
 

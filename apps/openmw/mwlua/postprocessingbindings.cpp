@@ -99,14 +99,35 @@ namespace MWLua
             return shader.mQueuedAction;
         };
 
-        shader["setUniform"] = sol::overload(
-            [context] (const Shader& shader, const std::string& name, bool value) { context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<bool>>(context.mLua, shader.mShader, name, value)); },
-            [context] (const Shader& shader, const std::string& name, float value) { context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<float>>(context.mLua, shader.mShader, name, value)); },
-            [context] (const Shader& shader, const std::string& name, int value) { context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<int>>(context.mLua, shader.mShader, name, value)); },
-            [context] (const Shader& shader, const std::string& name, const osg::Vec2f& value) { context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<osg::Vec2f>>(context.mLua, shader.mShader, name, value)); },
-            [context] (const Shader& shader, const std::string& name, const osg::Vec3f& value) { context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<osg::Vec3f>>(context.mLua, shader.mShader, name, value)); },
-            [context] (const Shader& shader, const std::string& name, const osg::Vec4f& value) { context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<osg::Vec4f>>(context.mLua, shader.mShader, name, value)); }
-        );
+        shader["setBool"] = [context](const Shader& shader, const std::string& name, bool value)
+        {
+            context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<bool>>(context.mLua, shader.mShader, name, value));
+        };
+
+        shader["setFloat"] = [context](const Shader& shader, const std::string& name, float value)
+        {
+            context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<float>>(context.mLua, shader.mShader, name, value));
+        };
+
+        shader["setInt"] = [context](const Shader& shader, const std::string& name, int value)
+        {
+            context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<int>>(context.mLua, shader.mShader, name, value));
+        };
+
+        shader["setVector2"] = [context](const Shader& shader, const std::string& name, const osg::Vec2f& value)
+        {
+            context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<osg::Vec2f>>(context.mLua, shader.mShader, name, value));
+        };
+
+        shader["setVector3"] = [context](const Shader& shader, const std::string& name, const osg::Vec3f& value)
+        {
+            context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<osg::Vec3f>>(context.mLua, shader.mShader, name, value));
+        };
+
+        shader["setVector4"] = [context](const Shader& shader, const std::string& name, const osg::Vec4f& value)
+        {
+            context.mLuaManager->addAction(std::make_unique<SetUniformShaderAction<osg::Vec4f>>(context.mLua, shader.mShader, name, value));
+        };
 
         api["load"] = [context](const std::string& name)
         {

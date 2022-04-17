@@ -47,25 +47,46 @@
 -- vignetteShader:enable() -- shader will be toggled on
 
 ---
--- Set a non static shader variable.
--- @function [parent=#Shader] setUniform
+-- Set a non static bool shader variable.
+-- @function [parent=#Shader] setBool
 -- @param self
 -- @param #string name Name of uniform
--- @param #any value Value of uniform. No type conversions take place, ensure correct type is used.
--- @usage
--- local postprocessing = require('openmw.postprocessing')
--- local util = require('openmw.util')
---
--- -- Load and activate a shader
--- local vignetteShader = shader.postprocessing('vignette')
--- vignetteShader:enable()
---
--- -- Ensure you pass correct uniform type.
--- vignetteShader.setUniform('myBool', true)
--- vignetteShader.setUniform('myFloat', 1.0)
--- vignetteShader.setUniform('myInt', 1)
--- vignetteShader.setUniform('myVector2', util.vector2(1, 1))
--- vignetteShader.setUniform('myVector3', util.vector3(1, 1, 1))
--- vignetteShader.setUniform('myVector4', util.vector4(1, 1, 1, 1))
+-- @param #boolean value Value of uniform.
+
+---
+-- Set a non static integer shader variable.
+-- @function [parent=#Shader] setInt
+-- @param self
+-- @param #string name Name of uniform
+-- @param #number value Value of uniform.
+
+---
+-- Set a non static float shader variable.
+-- @function [parent=#Shader] setFloat
+-- @param self
+-- @param #string name Name of uniform
+-- @param #number value Value of uniform.
+
+---
+-- Set a non static Vector2 shader variable.
+-- @function [parent=#Shader] setVector2
+-- @param self
+-- @param #string name Name of uniform
+-- @param #Vector2 value Value of uniform.
+
+---
+-- Set a non static Vector3 shader variable.
+-- @function [parent=#Shader] setVector3
+-- @param self
+-- @param #string name Name of uniform
+-- @param #Vector3 value Value of uniform.
+
+---
+-- Set a non static Vector4 shader variable.
+-- @function [parent=#Shader] setVector4
+-- @param self
+-- @param #string name Name of uniform
+-- @param #Vector4 value Value of uniform.
+
 
 return nil

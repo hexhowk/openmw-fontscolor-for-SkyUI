@@ -129,7 +129,7 @@ namespace fx
             extBlock << "#ifdef " << extension << '\n' << "\t#extension " << extension << ": enable" << '\n' << "#endif" << '\n';
 
         const std::vector<std::pair<std::string,std::string>> defines = {
-            {"@version", technique.getGLSLVersion()},
+            {"@version", std::to_string(technique.getGLSLVersion())},
             {"@profile", technique.getGLSLProfile()},
             {"@extensions", extBlock.str()},
             {"@uboStruct", StateUpdater::getStructDefinition()},
@@ -211,7 +211,7 @@ namespace fx
         if (mCompiled)
             return;
 
-        mLegacyGLSL = technique.getGLSLVersion() != "330";
+        mLegacyGLSL = technique.getGLSLVersion() != 330;
 
         if (mType == Type::Pixel)
         {

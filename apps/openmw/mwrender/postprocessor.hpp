@@ -188,7 +188,8 @@ namespace MWRender
         int mDepthFormat;
         int mSamples;
 
-        std::array<bool, 2> mDirty;
+        bool mDirty;
+        size_t mDirtyFrameId;
 
         RenderingManager& mRendering;
         osgViewer::Viewer* mViewer;
@@ -204,6 +205,7 @@ namespace MWRender
         bool mUnderwater;
         bool mHDR;
         bool mUBO;
+        int mGLSLVersion;
 
         osg::ref_ptr<osg::Texture2D> mMainTemplate;
 
