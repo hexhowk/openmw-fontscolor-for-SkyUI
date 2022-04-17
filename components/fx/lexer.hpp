@@ -34,6 +34,7 @@ namespace fx
             };
 
             Lexer(std::string_view buffer);
+            Lexer() = delete;
 
             Token next();
             Token peek();

@@ -63,8 +63,9 @@ namespace MWRender
         struct BufferData
         {
             bool dirty = false;
-            fx::DispatchArray data;
+            bool hdr = false;
 
+            fx::DispatchArray data;
             fx::FlagsType mask;
 
             osg::ref_ptr<osg::FrameBufferObject> destination;
@@ -73,8 +74,6 @@ namespace MWRender
             osg::ref_ptr<osg::Texture2D> sceneTex;
             osg::ref_ptr<osg::Texture2D> sceneTexLDR;
             osg::ref_ptr<osg::Texture2D> depthTex;
-
-            bool hdr;
         };
 
         mutable std::array<BufferData, 2> mBufferData;

@@ -208,7 +208,7 @@ namespace fx
                     advance();
                     return {Comma{}};
                 default:
-                    error("unexpected token");
+                    error("unexpected token <" + head() + '>');
             }
         }
 

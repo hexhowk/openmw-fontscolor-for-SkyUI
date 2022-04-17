@@ -24,14 +24,9 @@ namespace Settings
      * config:
      *   TECHNIQUE:
      *    MY_FLOAT: 10.34
-     *    MY_VEC2:
-     *      - 0.23
-     *      - 0.32
+     *    MY_VEC2: [0.23, 0.34]
      *   TECHNIQUE2:
-     *    MY_VEC3:
-     *      - 0.22
-     *      - 0.33
-     *      - 0.20
+     *    MY_VEC3: [0.22, 0.33, 0.20]
     */
     class ShaderManager
     {
@@ -134,6 +129,9 @@ namespace Settings
 
             std::ofstream fout(mPath.string());
             fout << out.c_str();
+
+            if (!fout)
+                Log(Debug::Error) << "Failed saving shader settings file: " << mPath;
         }
 
     private:
