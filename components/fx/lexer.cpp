@@ -65,6 +65,12 @@ namespace fx
 
             mLastJumpBlock.line = mLine;
 
+            if (head() == '}')
+            {
+                mLastJumpBlock.content = {};
+                return mLastJumpBlock.content;
+            }
+
             for (; mHead != mTail; advance())
             {
                 if (head() == '\n')
@@ -208,7 +214,7 @@ namespace fx
                     advance();
                     return {Comma{}};
                 default:
-                    error("unexpected token <" + head() + '>');
+                    error(Misc::StringUtils::format("unexpected token <%c>", head()));
             }
         }
 

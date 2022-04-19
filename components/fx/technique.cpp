@@ -244,10 +244,8 @@ namespace fx
             }
             else if (key == "glsl_extensions")
             {
-                expect<Lexer::Open_Parenthesis>();
                 for (const auto& ext : parseLiteralList<Lexer::Comma>())
                     mGLSLExtensions.emplace(ext);
-                expect<Lexer::Close_Parenthesis>();
             }
             else
                 error(Misc::StringUtils::format("unexpected key '%s'", std::string{key}));

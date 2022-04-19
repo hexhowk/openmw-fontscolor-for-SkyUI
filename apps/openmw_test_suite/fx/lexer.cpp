@@ -37,6 +37,15 @@ namespace
     TEST_F(LexerSingleTokenTest, single_token_vec3) { test<Vec3>(); }
     TEST_F(LexerSingleTokenTest, single_token_vec4) { test<Vec4>(); }
 
+    TEST(LexerTest, peek_whitespace_only_content_should_be_eof)
+    {
+        Lexer lexer(R"(
+
+        )");
+
+        EXPECT_TRUE(std::holds_alternative<Eof>(lexer.peek()));
+    }
+
     TEST(LexerTest, float_with_no_prefixed_digits)
     {
         Lexer lexer(R"(
@@ -130,22 +139,17 @@ namespace
 
     TEST(LexerTest, jump_with_single_nested_bracket)
     {
-        Lexer lexer(R"(
+        const std::string content = R"(
                 #version 120
 
                 void main()
                 {
                     return 0;
-                }}
-        )");
+                }})";
 
-        std::string expected = R"(
-                #version 120
+        const std::string expected = content.substr(0, content.size() - 1);
 
-                void main()
-                {
-                    return 0;
-                })";
+        Lexer lexer(content);
 
         auto block = lexer.jump();
     
@@ -155,24 +159,18 @@ namespace
 
     TEST(LexerTest, jump_with_single_line_comments_and_mismatching_brackets)
     {
-        Lexer lexer(R"(
+        const std::string content = R"(
                 #version 120
 
                 void main()
                 {
                     // }
                     return 0;
-                }}
-        )");
+                }})";
 
-        std::string expected = R"(
-                #version 120
+        const std::string expected = content.substr(0, content.size() - 1);
 
-                void main()
-                {
-                    // }
-                    return 0;
-                })";
+        Lexer lexer(content);
 
         auto block = lexer.jump();
     
@@ -182,7 +180,7 @@ namespace
 
     TEST(LexerTest, jump_with_multi_line_comments_and_mismatching_brackets)
     {
-        Lexer lexer(R"(
+        const std::string content = R"(
                 #version 120
 
                 void main()
@@ -191,24 +189,28 @@ namespace
                         }
                     */
                     return 0;
-                }}
-        )");
+                }})";
 
-        std::string expected = R"(
-                #version 120
+        const std::string expected = content.substr(0, content.size() - 1);
 
-                void main()
-                {
-                    /*
-                        }
-                    */
-                    return 0;
-                })";
+        Lexer lexer(content);
 
         auto block = lexer.jump();
     
         EXPECT_NE(block, std::nullopt);
         EXPECT_EQ(expected, std::string(block.value()));
+    }
+
+    TEST(LexerTest, immediate_closed_blocks)
+    {
+        Lexer lexer(R"(block{})");
+
+        EXPECT_TRUE(std::holds_alternative<Literal>(lexer.next()));
+        EXPECT_TRUE(std::holds_alternative<Open_bracket>(lexer.next()));
+        auto block = lexer.jump();
+        EXPECT_TRUE(block.has_value());
+        EXPECT_TRUE(block.value().empty());
+        EXPECT_TRUE(std::holds_alternative<Close_bracket>(lexer.next()));
     }
 
 }

@@ -18,8 +18,9 @@
 namespace Settings
 {
     /*
-     * ShaderManager manages the shader.yaml file which is auto-generated next to the settings.cfg if it does not exist.
+     * Manages the shader.yaml file which is auto-generated and lives next to settings.cfg.
      * This YAML file is simply a mapping of technique name to a list of uniforms and their values.
+     * Currently only vec2f, vec3f, vec4f, int, and float uniforms are supported.
      *
      * config:
      *   TECHNIQUE:
@@ -64,20 +65,27 @@ namespace Settings
         }
 
         template <class T>
-        void setValue(const std::string& tname, const std::string& uname, const T& value)
+        bool setValue(const std::string& tname, const std::string& uname, const T& value)
         {
             if (mData.IsNull())
             {
                 Log(Debug::Warning) << "Failed setting " << tname << ", " << uname << " : shader settings failed to load";
-                return;
+                return false;
             }
 
             mData["config"][tname][uname] = value;
+            return true;
         }
 
         template <class T>
         std::optional<T> getValue(const std::string& tname, const std::string& uname)
         {
+            if (mData.IsNull())
+            {
+                Log(Debug::Warning) << "Failed getting " << tname << ", " << uname << " : shader settings failed to load";
+                return std::nullopt;
+            }
+
             try
             {
                 auto value = mData["config"][tname][uname];
@@ -95,7 +103,7 @@ namespace Settings
             return std::nullopt;
         }
 
-        void load(const std::string& path)
+        bool load(const std::string& path)
         {
             mData = YAML::Null;
             mPath = std::filesystem::path(path);
@@ -103,7 +111,14 @@ namespace Settings
             Log(Debug::Info) << "Loading shader settings file: " << mPath;
 
             if (!std::filesystem::exists(mPath))
+            {
                 std::ofstream fout(mPath);
+                if (!fout)
+                {
+                    Log(Debug::Error) << "Failed creating shader settings file: " << mPath;
+                    return false;
+                }
+            }
 
             try
             {
@@ -112,15 +127,25 @@ namespace Settings
 
                 if (!mData["config"])
                     mData["config"] = YAML::Node();
+
+                return true;
             }
             catch(const YAML::Exception& e)
             {
                 Log(Debug::Error) << "Shader settings failed to load, " <<  e.msg;
             }
+
+            return false;
         }
 
-        void save()
+        bool save()
         {
+            if (mData.IsNull())
+            {
+                Log(Debug::Error) << "Shader settings failed to load, settings will not be saved: " << mPath;
+                return false;
+            }
+
             Log(Debug::Info) << "Saving shader settings file: " << mPath;
 
             YAML::Emitter out;
@@ -131,7 +156,12 @@ namespace Settings
             fout << out.c_str();
 
             if (!fout)
+            {
                 Log(Debug::Error) << "Failed saving shader settings file: " << mPath;
+                return false;
+            }
+
+            return true;
         }
 
     private:

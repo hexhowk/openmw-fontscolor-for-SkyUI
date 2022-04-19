@@ -12,7 +12,7 @@
 			<Property key="Caption" value="[?]"/>
 			<UserString key="ToolTipType" value="Layout"/>
 			<UserString key="ToolTipLayout" value="TextToolTip"/>
-			<UserString key="Caption_Text" value="Controls for a highlighted shader:\n\nRight-Arrow > Activate shader\nLeft-Arrow > Deactive shader\nShift+Up-Arrow > Move active shader up the list\nShift+Down-Arrow > Move shader down the list"/>
+			<UserString key="Caption_Text" value="Controls for a highlighted shader:\n\nRight-Arrow > Activate shader\nLeft-Arrow > Deactive shader\nShift+Up-Arrow > Move active shader up the list\nShift+Down-Arrow > Move active shader down the list"/>
 		</Widget>
 
         <Widget type="TabItem" skin="" position_real="0 0 1 1" name="TabConfiguration">

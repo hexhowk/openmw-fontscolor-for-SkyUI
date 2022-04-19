@@ -39,8 +39,6 @@ namespace fx
             Token next();
             Token peek();
 
-            void drop();
-
             // Jump ahead to next uncommented closing bracket at level zero. Assumes the head is at an opening bracket.
             // Returns the contents of the block excluding the brackets and places cursor at closing bracket.
             std::optional<std::string_view> jump();
@@ -50,6 +48,7 @@ namespace fx
             [[noreturn]] void error(const std::string& msg);
 
         private:
+            void drop();
             void advance();
             char head();
             bool peekChar(char c);

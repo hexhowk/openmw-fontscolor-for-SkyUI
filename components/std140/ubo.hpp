@@ -13,26 +13,98 @@
 
 namespace std140
 {
-    using std140_mat4 = osg::Matrixf;
-    using std140_vec4 = osg::Vec4f;
-    using std140_vec2 = osg::Vec2f;
-    using std140_float = float;
-    using std140_int = std::int32_t;
-    using std140_bool = std::int32_t;
-
-    template <class T>
-    struct Field {
-        using Value = T;
-        T mValue;
+    struct Mat4
+    {
+        using Value = osg::Matrixf;
+        Value mValue;
+        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::string_view sTypeName = "mat4";
     };
 
-    template <class ... CArgs>
+    struct Vec4
+    {
+        using Value = osg::Vec4f;
+        Value mValue;
+        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::string_view sTypeName = "vec4";
+    };
+
+    struct Vec3
+    {
+        using Value = osg::Vec3f;
+        Value mValue;
+        static constexpr size_t sAlign = 4 * sizeof(osg::Vec3f::value_type);
+        static constexpr std::string_view sTypeName = "vec2";
+    };
+
+    struct Vec2
+    {
+        using Value = osg::Vec2f;
+        Value mValue;
+        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::string_view sTypeName = "vec2";
+    };
+
+    struct Float
+    {
+        using Value = float;
+        Value mValue;
+        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::string_view sTypeName = "float";
+    };
+
+    struct Int
+    {
+        using Value = std::int32_t;
+        Value mValue;
+        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::string_view sTypeName = "int";
+    };
+
+    struct UInt
+    {
+        using Value = std::uint32_t;
+        Value mValue;
+        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::string_view sTypeName = "uint";
+    };
+
+    struct Bool
+    {
+        using Value = std::int32_t;
+        Value mValue;
+        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::string_view sTypeName = "bool";
+    };
+
+    template <class... CArgs>
     class UBO
     {
-    public:
-        std::tuple<CArgs...> mData;
+    private:
 
-        using value_type = std::array<char, (sizeof(CArgs) + ...)>;
+        template<typename T, typename... Args>
+        struct contains : std::bool_constant<(std::is_base_of_v<Args, T> || ...)> { };
+
+        static_assert((contains<CArgs, Mat4, Vec4, Vec3, Vec2, Float, Int, UInt, Bool>() && ...));
+
+        static constexpr size_t roundUpRemainder(size_t x, size_t multiple)
+        {
+            size_t remainder = x % multiple;
+            if (remainder == 0)
+                return 0;
+            return multiple - remainder;
+        }
+
+    public:
+
+        static constexpr size_t getGPUSize()
+        {
+            std::size_t size = 0;
+            ((size += (sizeof(typename CArgs::Value) + UBO::roundUpRemainder(size, CArgs::sAlign))) , ...);
+            return size;
+        }
+
+        using BufferType = std::array<char, UBO::getGPUSize()>;
 
         template <class T>
         typename T::Value& get()
@@ -46,50 +118,41 @@ namespace std140
             return std::get<T>(mData).mValue;
         }
 
-        std::string getDefinition(const std::string& name)
+        std::string getDefinition(const std::string& name) const
         {
             std::string structDefinition = "struct " + name + " {\n";
             std::apply([&] (const auto& ... v) { structDefinition += (makeStructField(v) + ...); }, mData);
             return structDefinition + "};";
         }
 
-        constexpr auto getBuffer() {
-            std::array<char, (sizeof(CArgs) + ...)> buffer;
+        void copyTo(BufferType& buffer) const
+        {
             char* dst = buffer.data();
+            size_t byteOffset = 0;
+
             const auto copy = [&] (const auto& v) {
-                static_assert(std::is_standard_layout_v<std::decay_t<decltype(v)>>);
-                std::memcpy(dst, &v, sizeof(v));
-                dst += sizeof(v);
+                static_assert(std::is_standard_layout_v<std::decay_t<decltype(v.mValue)>>);
+                using T = std::decay_t<decltype(v)>;
+
+                size_t alignmentDelta = roundUpRemainder(byteOffset, T::sAlign);
+                dst += alignmentDelta;
+                std::memcpy(dst, &v.mValue, sizeof(v.mValue));
+
+                byteOffset += sizeof(T::Value) + alignmentDelta;
+                dst += sizeof(T::Value);
             };
+
             std::apply([&] (const auto& ... v) { (copy(v) , ...); }, mData);
-            return buffer;
         }
 
     private:
         template <class T>
-        static constexpr std::string_view getTypeName()
+        std::string makeStructField(const T& v) const
         {
-            if constexpr (std::is_same_v<T, std140_mat4>)
-                return "mat4";
-            else if constexpr (std::is_same_v<T, std140_vec4>)
-                return "vec4";
-            else if constexpr (std::is_same_v<T, std140_vec2>)
-                return "vec2";
-            else if constexpr (std::is_same_v<T, std140_float>)
-                return "float";
-            else if constexpr (std::is_same_v<T, std140_int>)
-                return "int";
-            else if constexpr (std::is_same_v<T, std140_bool>)
-                return "bool";
-            else
-                static_assert(!std::is_same_v<T, T>, "Unsupported field type");
+            return "    " + std::string(T::sTypeName) + " " + std::string(v.sName) + ";\n";
         }
 
-        template <class T>
-        std::string makeStructField(const T& v)
-        {
-            return "    " + std::string(getTypeName<typename T::Value>()) + " " + std::string(v.sName) + ";\n";
-        }
+        std::tuple<CArgs...> mData;
     };
 }
 

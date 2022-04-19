@@ -15,10 +15,10 @@ namespace fx
         {
             osg::ref_ptr<osg::UniformBufferObject> ubo = new osg::UniformBufferObject;
 
-            osg::ref_ptr<osg::BufferTemplate<UniformData::value_type>> data = new osg::BufferTemplate<UniformData::value_type>();
+            osg::ref_ptr<osg::BufferTemplate<UniformData::BufferType>> data = new osg::BufferTemplate<UniformData::BufferType>();
             data->setBufferObject(ubo);
 
-            osg::ref_ptr<osg::UniformBufferBinding> ubb = new osg::UniformBufferBinding(static_cast<int>(Resource::SceneManager::UBOBinding::PostProcessor), data, 0, sizeof(UniformData));
+            osg::ref_ptr<osg::UniformBufferBinding> ubb = new osg::UniformBufferBinding(static_cast<int>(Resource::SceneManager::UBOBinding::PostProcessor), data, 0, mData.getGPUSize());
 
             stateset->setAttributeAndModes(ubb, osg::StateAttribute::ON);
         }
@@ -57,8 +57,8 @@ namespace fx
         {
             osg::UniformBufferBinding* ubb = dynamic_cast<osg::UniformBufferBinding*>(stateset->getAttribute(osg::StateAttribute::UNIFORMBUFFERBINDING, static_cast<int>(Resource::SceneManager::UBOBinding::PostProcessor)));
 
-            auto& dest = static_cast<osg::BufferTemplate<UniformData::value_type>*>(ubb->getBufferData())->getData();
-            dest = mData.getBuffer();
+            auto& dest = static_cast<osg::BufferTemplate<UniformData::BufferType>*>(ubb->getBufferData())->getData();
+            mData.copyTo(dest);
 
             ubb->getBufferData()->dirty();
         }
