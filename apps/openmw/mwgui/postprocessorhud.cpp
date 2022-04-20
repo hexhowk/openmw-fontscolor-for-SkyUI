@@ -56,9 +56,6 @@ namespace MWGui
     PostProcessorHud::PostProcessorHud()
         : WindowBase("openmw_postprocessor_hud.layout")
     {
-        MyGUI::IntSize viewSize = MyGUI::RenderManager::getInstance().getViewSize();
-        mMainWidget->setSize({std::min(600, viewSize.width), viewSize.height - 4});
-
         getWidget(mTabConfiguration, "TabConfiguration");
         getWidget(mActiveList, "ActiveList");
         getWidget(mInactiveList, "InactiveList");
@@ -202,6 +199,7 @@ namespace MWGui
 
     void PostProcessorHud::onOpen()
     {
+        toggleMode(Settings::ShaderManager::Mode::Debug);
         updateTechniques();
     }
 

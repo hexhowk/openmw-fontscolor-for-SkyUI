@@ -474,6 +474,7 @@ namespace MWGui
 
         mPostProcessorHud = new PostProcessorHud();
         mWindows.push_back(mPostProcessorHud);
+        trackWindow(mPostProcessorHud, "postprocessor");
 
         mInputBlocker = MyGUI::Gui::getInstance().createWidget<MyGUI::Widget>("",0,0,w,h,MyGUI::Align::Stretch,"InputBlocker");
 

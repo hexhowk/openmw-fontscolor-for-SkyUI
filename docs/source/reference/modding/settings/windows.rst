@@ -244,3 +244,18 @@ console
 
 The console command window.
 Activated by pressing the tilde (~) key.
+
+postprocessor
+-------------
+
+:Default:
+	x = 0.01
+
+	y = 0.02
+
+	w = 0.44
+
+	h = 0.95
+
+The postprocessor window used to configure shaders.
+Activated by pressing the F2 key.
