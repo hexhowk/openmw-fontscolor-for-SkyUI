@@ -143,8 +143,8 @@ namespace fx
             {"@texture1D", mLegacyGLSL ? "texture1D" : "texture"},
             {"@texture2D", mLegacyGLSL ? "texture2D" : "texture"},
             {"@texture3D", mLegacyGLSL ? "texture3D" : "texture"},
-            {"@vertex", mLegacyGLSL ? "gl_Vertex" : "omw_Vertex"},
-            {"@fragColor", mLegacyGLSL ? "gl_FragColor" : "omw_FragColor"},
+            {"@vertex", mLegacyGLSL ? "gl_Vertex" : "_omw_Vertex"},
+            {"@fragColor", mLegacyGLSL ? "gl_FragColor" : "_omw_FragColor"},
             {"@useBindings", mLegacyGLSL ? "0" : "1"},
             {"@fragBinding", mLegacyGLSL ? "" : "out vec4 omw_FragColor;"}
         };
@@ -181,8 +181,8 @@ namespace fx
 
         if (!mLegacyGLSL)
         {
-            program->addBindFragDataLocation("omw_FragColor", 0);
-            program->addBindAttribLocation("omw_Vertex", 0);
+            program->addBindFragDataLocation("_omw_FragColor", 0);
+            program->addBindAttribLocation("_omw_Vertex", 0);
         }
 
         stateSet->setAttribute(program);
