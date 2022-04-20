@@ -33,15 +33,15 @@ namespace std140
     {
         using Value = osg::Vec3f;
         Value mValue;
-        static constexpr size_t sAlign = 4 * sizeof(osg::Vec3f::value_type);
-        static constexpr std::string_view sTypeName = "vec2";
+        static constexpr std::size_t sAlign = 4 * sizeof(osg::Vec3f::value_type);
+        static constexpr std::string_view sTypeName = "vec3";
     };
 
     struct Vec2
     {
         using Value = osg::Vec2f;
         Value mValue;
-        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::size_t sAlign = sizeof(Value);
         static constexpr std::string_view sTypeName = "vec2";
     };
 
@@ -49,7 +49,7 @@ namespace std140
     {
         using Value = float;
         Value mValue;
-        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::size_t sAlign = sizeof(Value);
         static constexpr std::string_view sTypeName = "float";
     };
 
@@ -57,7 +57,7 @@ namespace std140
     {
         using Value = std::int32_t;
         Value mValue;
-        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::size_t sAlign = sizeof(Value);
         static constexpr std::string_view sTypeName = "int";
     };
 
@@ -65,7 +65,7 @@ namespace std140
     {
         using Value = std::uint32_t;
         Value mValue;
-        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::size_t sAlign = sizeof(Value);
         static constexpr std::string_view sTypeName = "uint";
     };
 
@@ -73,7 +73,7 @@ namespace std140
     {
         using Value = std::int32_t;
         Value mValue;
-        static constexpr size_t sAlign = sizeof(Value);
+        static constexpr std::size_t sAlign = sizeof(Value);
         static constexpr std::string_view sTypeName = "bool";
     };
 
@@ -95,16 +95,28 @@ namespace std140
             return multiple - remainder;
         }
 
+        template <class T>
+        static constexpr std::size_t getOffset()
+        {
+            bool found = false;
+            std::size_t size = 0;
+            ((
+                found = found || std::is_same_v<T, CArgs>,
+                size += (found ? 0 : sizeof(typename CArgs::Value) + roundUpRemainder(size, CArgs::sAlign))
+            ) , ...);
+            return size + roundUpRemainder(size, T::sAlign);
+        }
+
     public:
 
         static constexpr size_t getGPUSize()
         {
             std::size_t size = 0;
-            ((size += (sizeof(typename CArgs::Value) + UBO::roundUpRemainder(size, CArgs::sAlign))) , ...);
+            ((size += (sizeof(typename CArgs::Value) + roundUpRemainder(size, CArgs::sAlign))) , ...);
             return size;
         }
 
-        using BufferType = std::array<char, UBO::getGPUSize()>;
+        using BufferType = std::array<char, getGPUSize()>;
 
         template <class T>
         typename T::Value& get()
@@ -127,19 +139,10 @@ namespace std140
 
         void copyTo(BufferType& buffer) const
         {
-            char* dst = buffer.data();
-            size_t byteOffset = 0;
-
             const auto copy = [&] (const auto& v) {
                 static_assert(std::is_standard_layout_v<std::decay_t<decltype(v.mValue)>>);
-                using T = std::decay_t<decltype(v)>;
-
-                size_t alignmentDelta = roundUpRemainder(byteOffset, T::sAlign);
-                dst += alignmentDelta;
-                std::memcpy(dst, &v.mValue, sizeof(v.mValue));
-
-                byteOffset += sizeof(T::Value) + alignmentDelta;
-                dst += sizeof(T::Value);
+                constexpr std::size_t offset = getOffset<std::decay_t<decltype(v)>>();
+                std::memcpy(buffer.data() + offset, &v.mValue, sizeof(v.mValue));
             };
 
             std::apply([&] (const auto& ... v) { (copy(v) , ...); }, mData);
