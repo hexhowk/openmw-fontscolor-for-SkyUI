@@ -112,8 +112,15 @@ namespace std140
         static constexpr size_t getGPUSize()
         {
             std::size_t size = 0;
-            ((size += (sizeof(typename CArgs::Value) + roundUpRemainder(size, CArgs::sAlign))) , ...);
+            ((size += (sizeof(typename CArgs::Value) + roundUpRemainder(size, CArgs::sAlign))), ...);
             return size;
+        }
+
+        static std::string getDefinition(const std::string& name)
+        {
+            std::string structDefinition = "struct " + name + " {\n";
+            ((structDefinition += ("    " + std::string(CArgs::sTypeName) + " " + std::string(CArgs::sName) + ";\n")), ...);
+            return structDefinition + "};";
         }
 
         using BufferType = std::array<char, getGPUSize()>;
@@ -130,13 +137,6 @@ namespace std140
             return std::get<T>(mData).mValue;
         }
 
-        std::string getDefinition(const std::string& name) const
-        {
-            std::string structDefinition = "struct " + name + " {\n";
-            std::apply([&] (const auto& ... v) { structDefinition += (makeStructField(v) + ...); }, mData);
-            return structDefinition + "};";
-        }
-
         void copyTo(BufferType& buffer) const
         {
             const auto copy = [&] (const auto& v) {
@@ -149,12 +149,6 @@ namespace std140
         }
 
     private:
-        template <class T>
-        std::string makeStructField(const T& v) const
-        {
-            return "    " + std::string(T::sTypeName) + " " + std::string(v.sName) + ";\n";
-        }
-
         std::tuple<CArgs...> mData;
     };
 }

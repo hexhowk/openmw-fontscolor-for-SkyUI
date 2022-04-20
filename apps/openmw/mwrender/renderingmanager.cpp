@@ -840,9 +840,9 @@ namespace MWRender
 
         bool isUnderwater = mWater->isUnderwater(mCamera->getPosition());
 
-        auto fogStart = mFog->getFogStart(isUnderwater);
-        auto fogEnd = mFog->getFogEnd(isUnderwater);
-        auto fogColor = mFog->getFogColor(isUnderwater);
+        float fogStart = mFog->getFogStart(isUnderwater);
+        float fogEnd = mFog->getFogEnd(isUnderwater);
+        osg::Vec4f fogColor = mFog->getFogColor(isUnderwater);
 
         mStateUpdater->setFogStart(fogStart);
         mStateUpdater->setFogEnd(fogEnd);
