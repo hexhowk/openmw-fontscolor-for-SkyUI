@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include <osg/Texture>
+#include <osg/Image>
 #include <osg/BlendFunc>
 #include <osg/BlendEquation>
 
@@ -52,11 +53,11 @@ namespace fx
             {"rg16f"             ,  GL_RG16F},
             {"rg32f"             ,  GL_RG32F},
             {"rgb"               ,  GL_RGB},
-            {"rgb16f"            ,  GL_RGB16F},
-            {"rgb32f"            ,  GL_RGB32F},
+            {"rgb16f"            ,  GL_RGB16F_ARB},
+            {"rgb32f"            ,  GL_RGB32F_ARB},
             {"rgba"              ,  GL_RGBA},
-            {"rgba16f"           ,  GL_RGBA16F},
-            {"rgba32f"           ,  GL_RGBA32F},
+            {"rgba16f"           ,  GL_RGBA16F_ARB},
+            {"rgba32f"           ,  GL_RGBA32F_ARB},
             {"depth_component16" ,  GL_DEPTH_COMPONENT16},
             {"depth_component24" ,  GL_DEPTH_COMPONENT24},
             {"depth_component32" ,  GL_DEPTH_COMPONENT32},

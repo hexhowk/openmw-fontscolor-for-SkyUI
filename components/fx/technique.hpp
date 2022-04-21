@@ -42,7 +42,7 @@ namespace fx
     {
         DispatchNode() = default;
 
-        DispatchNode(const DispatchNode& other, const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY) 
+        DispatchNode(const DispatchNode& other, const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY)
             : mHandle(other.mHandle)
             , mFlags(other.mFlags)
             , mRootStateSet(other.mRootStateSet)
@@ -79,7 +79,7 @@ namespace fx
 
         osg::ref_ptr<osg::StateSet> mRootStateSet = new osg::StateSet;
     };
-    
+
     using DispatchArray = std::vector<DispatchNode>;
 
     class Technique
@@ -119,11 +119,11 @@ namespace fx
 
         void setLastModificationTime(std::filesystem::file_time_type timeStamp, bool dirty = true);
 
-        bool isDirty() const;
+        bool isDirty() const { return mDirty; }
 
-        void setDirty(bool dirty);
+        void setDirty(bool dirty) { mDirty = dirty; }
 
-        bool isValid() const;
+        bool isValid() const { return mValid; }
 
         bool getHDR() const { return mHDR; }
 
@@ -140,7 +140,9 @@ namespace fx
         std::string_view getVersion() const { return mVersion; }
 
         int getGLSLVersion() const { return mGLSLVersion; }
+
         std::string getGLSLProfile() const { return mGLSLProfile; }
+
         const std::unordered_set<std::string>& getGLSLExtensions() const { return mGLSLExtensions; }
 
         osg::ref_ptr<osg::Texture2D> getMainTemplate() const { return mMainTemplate; }

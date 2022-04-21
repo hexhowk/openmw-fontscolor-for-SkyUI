@@ -177,21 +177,6 @@ namespace fx
         mLastModificationTime = timeStamp;
     }
 
-    bool Technique::isDirty() const
-    {
-        return mDirty;
-    }
-
-    void Technique::setDirty(bool dirty)
-    {
-        mDirty = dirty;
-    }
-
-    bool Technique::isValid() const
-    {
-        return mValid;
-    }
-
     [[noreturn]] void Technique::error(const std::string& msg)
     {
         mLexer->error(msg);
