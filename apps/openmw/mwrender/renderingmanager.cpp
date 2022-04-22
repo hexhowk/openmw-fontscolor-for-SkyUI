@@ -856,7 +856,6 @@ namespace MWRender
         mPostProcessor->getStateUpdater()->setFogColor(fogColor);
         mPostProcessor->getStateUpdater()->setGameHour(world->getTimeStamp().getHour());
         mPostProcessor->setUnderwaterFlag(isUnderwater);
-        mPostProcessor->update();
     }
 
     void RenderingManager::updatePlayerPtr(const MWWorld::Ptr &ptr)

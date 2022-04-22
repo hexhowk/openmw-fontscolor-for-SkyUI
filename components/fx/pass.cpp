@@ -202,7 +202,6 @@ namespace fx
         mVertex = nullptr;
         mFragment = nullptr;
         mCompute = nullptr;
-
         mCompiled = false;
     }
 

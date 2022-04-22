@@ -130,6 +130,9 @@ namespace fx
                 else
                     mLastAppliedType = it->second->mType;
 
+                if (mUBO)
+                    mGLSLExtensions.insert("GL_ARB_uniform_buffer_object");
+
                 it->second->compile(*this, mShared);
 
                 if (!it->second->mTarget.empty())
@@ -147,7 +150,7 @@ namespace fx
 
             mValid = true;
         }
-        catch(const Lexer::LexerException& e)
+        catch(const std::runtime_error& e)
         {
             clear();
             mStatus = Status::Parse_Error;
@@ -217,7 +220,11 @@ namespace fx
             else if (key == "author")
                 mAuthor = parseString();
             else if (key == "glsl_version")
-                mGLSLVersion = parseInteger();
+            {
+                int version = parseInteger();
+                if (mUBO && version > 330)
+                    mGLSLVersion = version;
+            }
             else if (key == "flags")
                 mFlags = parseFlags();
             else if (key == "hdr")

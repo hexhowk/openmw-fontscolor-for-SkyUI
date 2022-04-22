@@ -64,6 +64,18 @@ namespace MWGui
 
         void notifyDeactivatePressed(MyGUI::Widget* sender);
 
+        void notifyShaderUpPressed(MyGUI::Widget* sender);
+
+        void notifyShaderDownPressed(MyGUI::Widget* sender);
+
+        enum class Direction
+        {
+            Up,
+            Down
+        };
+
+        void moveShader(Direction direction);
+
         void select(ListWrapper* list, size_t index);
 
         void layout();
@@ -75,6 +87,8 @@ namespace MWGui
 
         Gui::AutoSizedButton* mButtonActivate;
         Gui::AutoSizedButton* mButtonDeactivate;
+        Gui::AutoSizedButton* mButtonDown;
+        Gui::AutoSizedButton* mButtonUp;
 
         MyGUI::ScrollView* mConfigLayout;
 

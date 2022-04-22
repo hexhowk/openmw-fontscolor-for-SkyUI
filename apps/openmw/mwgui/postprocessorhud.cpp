@@ -64,9 +64,13 @@ namespace MWGui
         getWidget(mFilter, "Filter");
         getWidget(mButtonActivate, "ButtonActivate");
         getWidget(mButtonDeactivate, "ButtonDeactivate");
+        getWidget(mButtonUp, "ButtonUp");
+        getWidget(mButtonDown, "ButtonDown");
 
         mButtonActivate->eventMouseButtonClick += MyGUI::newDelegate(this, &PostProcessorHud::notifyActivatePressed);
         mButtonDeactivate->eventMouseButtonClick += MyGUI::newDelegate(this, &PostProcessorHud::notifyDeactivatePressed);
+        mButtonUp->eventMouseButtonClick += MyGUI::newDelegate(this, &PostProcessorHud::notifyShaderUpPressed);
+        mButtonDown->eventMouseButtonClick += MyGUI::newDelegate(this, &PostProcessorHud::notifyShaderDownPressed);
 
         mActiveList->eventKeyButtonPressed += MyGUI::newDelegate(this, &PostProcessorHud::notifyKeyButtonPressed);
         mInactiveList->eventKeyButtonPressed += MyGUI::newDelegate(this, &PostProcessorHud::notifyKeyButtonPressed);
@@ -137,6 +141,35 @@ namespace MWGui
             notifyKeyButtonPressed(mActiveList, MyGUI::KeyCode::ArrowLeft, MyGUI::Char{});
     }
 
+    void PostProcessorHud::moveShader(Direction direction)
+    {
+        auto* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
+
+        size_t selected = mActiveList->getIndexSelected();
+
+        if (selected == MyGUI::ITEM_NONE)
+            return;
+
+        int index = direction == Direction::Up ? static_cast<int>(selected) - 1 : selected + 1;
+        index = std::clamp<int>(index, 0, mActiveList->getItemCount() - 1);
+
+        if (static_cast<size_t>(index) != selected)
+        {
+            if (processor->enableTechnique(*mActiveList->getItemDataAt<std::shared_ptr<fx::Technique>>(selected), index))
+                saveChain();
+        }
+    }
+
+    void PostProcessorHud::notifyShaderUpPressed(MyGUI::Widget* sender)
+    {
+        moveShader(Direction::Up);
+    }
+
+    void PostProcessorHud::notifyShaderDownPressed(MyGUI::Widget* sender)
+    {
+        moveShader(Direction::Down);
+    }
+
     void PostProcessorHud::notifyKeyButtonPressed(MyGUI::Widget* sender, MyGUI::KeyCode key, MyGUI::Char ch)
     {
         auto* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
@@ -180,14 +213,7 @@ namespace MWGui
         }
         else if (list == mActiveList && MyGUI::InputManager::getInstance().isShiftPressed() && (key == MyGUI::KeyCode::ArrowUp || key == MyGUI::KeyCode::ArrowDown))
         {
-            int index = key == MyGUI::KeyCode::ArrowUp ? static_cast<int>(selected) - 1 : selected + 1;
-            index = std::clamp<int>(index, 0, mActiveList->getItemCount() - 1);
-
-            if ((size_t)index != selected)
-            {
-                if (processor->enableTechnique(*mActiveList->getItemDataAt<std::shared_ptr<fx::Technique>>(selected), index))
-                    saveChain();
-            }
+            moveShader(key == MyGUI::KeyCode::ArrowUp ? Direction::Up : Direction::Down);
         }
     }
 

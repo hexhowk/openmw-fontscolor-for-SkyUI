@@ -44,22 +44,10 @@ namespace MWRender
     class PingPongCanvas;
     class TransparentDepthBinCallback;
 
-    // We resolve depth early, so we must explicitly set the resolve framebuffer at right time during cull traversals.
-    // This is **very** important, depth buffer blits can be incredibly costly with MSAA and floating point formats.
-    class ResolveFboInterceptor : public SceneUtil::NodeCallback<ResolveFboInterceptor, osg::Node*, osgUtil::CullVisitor*>
+    class PostProcessor : public osg::Group
     {
     public:
-        void operator()(osg::Node* node, osgUtil::CullVisitor* cv);
-        void setFbo(size_t frameId, osg::ref_ptr<osg::FrameBufferObject> fbo);
-
-    private:
-        std::array<osg::ref_ptr<osg::FrameBufferObject>, 2> mFbos;
-    };
-
-    class PostProcessor : public osg::Referenced
-    {
-    public:
-        using FBOArray = std::array<osg::ref_ptr<osg::FrameBufferObject>, 4>;
+        using FBOArray = std::array<osg::ref_ptr<osg::FrameBufferObject>, 5>;
         using TextureArray = std::array<osg::ref_ptr<osg::Texture2D>, 4>;
         using TechniqueList = std::vector<std::shared_ptr<fx::Technique>>;
 
@@ -76,7 +64,8 @@ namespace MWRender
             FBO_Primary,
             FBO_Multisample,
             FBO_FirstPerson,
-            FBO_OpaqueDepth
+            FBO_OpaqueDepth,
+            FBO_Intercept
         };
 
         enum TextureUnits
@@ -91,6 +80,8 @@ namespace MWRender
         PostProcessor(RenderingManager& rendering, osgViewer::Viewer* viewer, osg::Group* rootNode, const VFS::Manager* vfs);
 
         ~PostProcessor();
+
+        void traverse(osg::NodeVisitor& nv) override;
 
         osg::ref_ptr<osg::FrameBufferObject> getFbo(FBOIndex index, unsigned int frameId) { return mFbos[frameId][index]; }
 
@@ -109,8 +100,6 @@ namespace MWRender
         int omw_GetDepthFormat() { return mDepthFormat; }
 
         const auto& getTechniqueMap() const { return mTechniqueFileMap; }
-
-        void update();
 
         void resize(int width, int height, bool resizeAttachments = false);
 
@@ -173,7 +162,10 @@ namespace MWRender
 
         void dirtyTechniques();
 
-        osg::ref_ptr<ResolveFboInterceptor> mResolveCullCallback;
+        void update(size_t frameId);
+
+        void cull(size_t frameId, osgUtil::CullVisitor* cv);
+
         osg::ref_ptr<osg::Group> mRootNode;
         osg::ref_ptr<osg::Camera> mHUDCamera;
 

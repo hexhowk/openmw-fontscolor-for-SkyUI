@@ -48,26 +48,9 @@ namespace
 
 namespace MWRender
 {
-    void ResolveFboInterceptor::operator()(osg::Node* node, osgUtil::CullVisitor* cv)
-    {
-        traverse(node, cv);
-
-        osgUtil::RenderStage* rs = cv->getRenderStage();
-
-        auto& fbo = mFbos[cv->getTraversalNumber() % 2];
-
-        if (rs && rs->getMultisampleResolveFramebufferObject() && fbo)
-            rs->setMultisampleResolveFramebufferObject(fbo);
-    }
-
-    void ResolveFboInterceptor::setFbo(size_t frameId, osg::ref_ptr<osg::FrameBufferObject> fbo)
-    {
-        mFbos[frameId] = new osg::FrameBufferObject;
-        mFbos[frameId]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, fbo->getAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0));
-    }
-
     PostProcessor::PostProcessor(RenderingManager& rendering, osgViewer::Viewer* viewer, osg::Group* rootNode, const VFS::Manager* vfs)
-        : mDepthFormat(GL_DEPTH24_STENCIL8)
+        : osg::Group()
+        , mDepthFormat(GL_DEPTH24_STENCIL8)
         , mSamples(Settings::Manager::getInt("antialiasing", "Video"))
         , mDirty(false)
         , mDirtyFrameId(0)
@@ -158,8 +141,6 @@ namespace MWRender
             }
         }
 
-        mRootNode = new osg::Group;
-
         mMainTemplate->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
         mMainTemplate->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
         mMainTemplate->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
@@ -168,18 +149,12 @@ namespace MWRender
         mMainTemplate->setSourceType(GL_UNSIGNED_BYTE);
         mMainTemplate->setSourceFormat(GL_RGBA);
 
-        if (mSamples > 1)
-        {
-            mResolveCullCallback = new ResolveFboInterceptor;
-            mRootNode->setCullCallback(mResolveCullCallback);
-        }
-
         createTexturesAndCamera(width(), height());
 
-        mRootNode->addChild(mHUDCamera);
-        mRootNode->addChild(rootNode);
+        addChild(mHUDCamera);
+        addChild(rootNode);
 
-        mViewer->setSceneData(mRootNode);
+        mViewer->setSceneData(this);
 
         mViewer->getCamera()->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
 
@@ -189,7 +164,7 @@ namespace MWRender
         mViewer->getCamera()->getGraphicsContext()->setResizedCallback(new ResizedCallback(this));
         mViewer->getCamera()->setUserData(this);
 
-        mRootNode->addCullCallback(mStateUpdater);
+        addCullCallback(mStateUpdater);
         mHUDCamera->setCullCallback(new SceneUtil::StateSetUpdater);
 
         mReload = true;
@@ -233,60 +208,73 @@ namespace MWRender
         mDirtyFrameId = !frameId;
     }
 
-    void PostProcessor::update()
+    void PostProcessor::traverse(osg::NodeVisitor& nv)
     {
         if (!mEnabled)
-            return;
-
-        bool needsReload = false;
-
-        if (Settings::Manager::getBool("live reload", "Post Processing"))
         {
-            for (auto& technique : mTechniques)
-            {
-                if (technique->getStatus() == fx::Technique::Status::File_Not_exists)
-                    continue;
-
-                technique->setLastModificationTime(std::filesystem::last_write_time(mTechniqueFileMap[technique->getName()]));
-
-                if (technique->isDirty())
-                    needsReload = true;
-            }
+            osg::Group::traverse(nv);
+            return;
         }
 
-        if (needsReload)
+        size_t frameId = nv.getTraversalNumber() % 2;
+
+        if (nv.getVisitorType() == osg::NodeVisitor::CULL_VISITOR)
+            cull(frameId, static_cast<osgUtil::CullVisitor*>(&nv));
+        else if (nv.getVisitorType() == osg::NodeVisitor::UPDATE_VISITOR)
+            update(frameId);
+
+        osg::Group::traverse(nv);
+    }
+
+    void PostProcessor::cull(size_t frameId, osgUtil::CullVisitor* cv)
+    {
+        const auto& fbo = getFbo(FBO_Intercept, frameId);
+        if (fbo)
+        {
+            osgUtil::RenderStage* rs = cv->getRenderStage();
+            if (rs && rs->getMultisampleResolveFramebufferObject())
+                rs->setMultisampleResolveFramebufferObject(fbo);
+        }
+    }
+
+    void PostProcessor::update(size_t frameId)
+    {
+        static const bool liveReload = Settings::Manager::getBool("live reload", "Post Processing");
+
+        if (liveReload)
         {
             for (auto& technique : mTechniques)
             {
-                if (technique->isValid() && !technique->isDirty())
+                technique->setLastModificationTime(std::filesystem::last_write_time(mTechniqueFileMap[technique->getName()]));
+
+                if ((technique->isValid() && !technique->isDirty()) || (technique->getStatus() == fx::Technique::Status::File_Not_exists))
                     continue;
 
-                try
+                if (technique->isDirty())
                 {
                     technique->compile();
 
-                    reloadMainPass(*technique);
-                    Log(Debug::Info) << "reloaded technique '" << technique->getFileName() << "'";
-                }
-                catch(const std::runtime_error& err)
-                {
-                    Log(Debug::Error) << "failed reloading technique file '" << technique->getFileName() << "': " << err.what();
+                    if (technique->isValid())
+                        Log(Debug::Info) << "Reloaded technique : " << mTechniqueFileMap[technique->getName()].string();
+
+                    if (!mReload)
+                        mReload = technique->isValid();
                 }
             }
-
-            mReload = true;
         }
 
         if (mReload)
         {
             mReload = false;
+
+            if (!mTechniques.empty())
+                reloadMainPass(*mTechniques[0]);
+
             reloadTechniques();
 
             if (!mUsePostProcessing)
                 resize(width(), height());
         }
-
-        size_t frameId = frame() % 2;
 
         if (mDirty && mDirtyFrameId == frameId)
         {
@@ -339,6 +327,9 @@ namespace MWRender
             fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
             fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(depthRB));
             fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
+
+            fbos[FBO_Intercept] = new osg::FrameBufferObject;
+            fbos[FBO_Intercept]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
         }
         else
             fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
@@ -353,9 +344,6 @@ namespace MWRender
         if (textures[Tex_OpaqueDepth])
             fbos[FBO_OpaqueDepth]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER, osg::FrameBufferAttachment(new osg::RenderBuffer(textures[Tex_OpaqueDepth]->getTextureWidth(), textures[Tex_OpaqueDepth]->getTextureHeight(), textures[Tex_Scene]->getInternalFormat())));
 #endif
-
-        if (mResolveCullCallback)
-            mResolveCullCallback->setFbo(frameId, mFbos[frameId][FBO_Primary]);
 
         if (mTransparentDepthPostPass)
         {
