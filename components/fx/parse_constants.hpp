@@ -64,6 +64,22 @@ namespace fx
             {"depth_component32f",  GL_DEPTH_COMPONENT32F}
         }};
 
+        constexpr std::array<std::pair<std::string_view, osg::Texture::InternalFormatMode>, 13> Compression = {{
+            {"auto"        , osg::Texture::USE_USER_DEFINED_FORMAT},
+            {"arb"         , osg::Texture::USE_ARB_COMPRESSION},
+            {"s3tc_dxt1"   , osg::Texture::USE_S3TC_DXT1_COMPRESSION},
+            {"s3tc_dxt3"   , osg::Texture::USE_S3TC_DXT3_COMPRESSION},
+            {"s3tc_dxt5"   , osg::Texture::USE_S3TC_DXT5_COMPRESSION},
+            {"pvrtc_2bpp"  , osg::Texture::USE_PVRTC_2BPP_COMPRESSION},
+            {"pvrtc_4bpp"  , osg::Texture::USE_PVRTC_4BPP_COMPRESSION},
+            {"etc"         , osg::Texture::USE_ETC_COMPRESSION},
+            {"etc2"        , osg::Texture::USE_ETC2_COMPRESSION},
+            {"rgtc1"       , osg::Texture::USE_RGTC1_COMPRESSION},
+            {"rgtc2"       , osg::Texture::USE_RGTC2_COMPRESSION},
+            {"s3tc_dxt1c"  , osg::Texture::USE_S3TC_DXT1c_COMPRESSION},
+            {"s3tc_dxt1a"  , osg::Texture::USE_S3TC_DXT1a_COMPRESSION}
+        }};
+
         constexpr std::array<std::pair<std::string_view, osg::Texture::WrapMode>, 6> WrapMode = {{
             {"clamp"          , osg::Texture::CLAMP},
             {"clamp_to_edge"  , osg::Texture::CLAMP_TO_EDGE},

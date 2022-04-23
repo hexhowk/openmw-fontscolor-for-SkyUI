@@ -312,21 +312,29 @@ OpenMW currently supports ``1D``, ``2D``, and ``3D`` texture samplers, cubemaps 
 The properites for a ``sampler_*`` block are as following.
 The only required property for a texture is its ``source``.
 
-+--------------+-----------------+
-| Property     | Type            |
-+==============+=================+
-|``source``    |  string         |
-+--------------+-----------------+
-|``min_filter``| `FILTER_MODE`_  |
-+--------------+-----------------+
-|``mag_filter``| `FILTER_MODE`_  |
-+--------------+-----------------+
-|``wrap_s``    | `WRAP_MODE`_    |
-+--------------+-----------------+
-|``wrap_t``    | `WRAP_MODE`_    |
-+--------------+-----------------+
-|``wrap_r``    | `WRAP_MODE`_    |
-+--------------+-----------------+
++-----------------------+-----------------------+
+| Property              | Type                  |
++=======================+=======================+
+|``source``             |  string               |
++-----------------------+-----------------------+
+|``min_filter``         | `FILTER_MODE`_        |
++-----------------------+-----------------------+
+|``mag_filter``         | `FILTER_MODE`_        |
++-----------------------+-----------------------+
+|``wrap_s``             | `WRAP_MODE`_          |
++-----------------------+-----------------------+
+|``wrap_t``             | `WRAP_MODE`_          |
++-----------------------+-----------------------+
+|``wrap_r``             | `WRAP_MODE`_          |
++-----------------------+-----------------------+
+|``compression``        | `COMPRESSION_MODE`_   |
++-----------------------+-----------------------+
+|``source_format``      | `SOURCE_FORMAT`_      |
++-----------------------+-----------------------+
+|``source_type``        | `SOURCE_TYPE`_        |
++-----------------------+-----------------------+
+|``internal_format``    | `INTERNAL_FORMAT`_    |
++-----------------------+-----------------------+
 
 In the code snippet below, a simple noise texture is loaded with nearest filtering.
 
@@ -782,3 +790,24 @@ Types
 +------------------+---------------------+
 | mirror           | GL_MIRRORED_REPEAT  |
 +------------------+---------------------+
+
+`COMPRESSION_MODE`
+******************
+
++-------------+
+| .omwfx      |
++=============+
+| auto        |
+| arb         |
+| s3tc_dxt1   |
+| s3tc_dxt3   |
+| s3tc_dxt5   |
+| pvrtc_2bpp  |
+| pvrtc_4bpp  |
+| etc         |
+| etc2        |
+| rgtc1       |
+| rgtc2       |
+| s3tc_dxt1c  |
+| s3tc_dxt1a  |
++-------------+

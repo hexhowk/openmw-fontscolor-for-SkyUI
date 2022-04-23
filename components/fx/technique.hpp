@@ -211,6 +211,8 @@ namespace fx
 
         osg::Texture::WrapMode parseWrapMode();
 
+        osg::Texture::InternalFormatMode parseCompression();
+
         FlagsType parseFlags();
 
         osg::Texture::FilterMode parseFilterMode();
