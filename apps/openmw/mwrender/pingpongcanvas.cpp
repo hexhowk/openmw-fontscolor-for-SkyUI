@@ -7,9 +7,8 @@
 
 namespace MWRender
 {
-    PingPongCanvas::PingPongCanvas(bool usePostProcessing, Shader::ShaderManager& shaderManager)
+    PingPongCanvas::PingPongCanvas(Shader::ShaderManager& shaderManager)
         : mLoggedErrorLastFrame(false)
-        , mUsePostProcessing(usePostProcessing)
         , mQueuedDispatchArray(std::nullopt)
         , mQueuedDispatchFrameId(0)
     {
@@ -95,11 +94,10 @@ namespace MWRender
 
             filtered.push_back(i);
         }
-
         // if postprocessing is enabled and we have an invalid main pass it is not recoverable, fallback to blit or we'll have nothing to render!
-        if (filtered.empty())
+        if (filtered.empty() || !bufferData.postprocessing)
         {
-            if (mUsePostProcessing && !mLoggedErrorLastFrame)
+            if (bufferData.postprocessing && !mLoggedErrorLastFrame)
             {
                 Log(Debug::Error) << "Critical error, postprocess shaders failed to compile. Falling back to blit.";
                 mLoggedErrorLastFrame = true;

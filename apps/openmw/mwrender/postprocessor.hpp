@@ -145,6 +145,10 @@ namespace MWRender
 
         bool getHDR() const { return mHDR; }
 
+        void disable();
+
+        void enable(bool usePostProcessing = true);
+
     private:
         int width() const { return mViewer->getCamera()->getViewport()->width(); }
 

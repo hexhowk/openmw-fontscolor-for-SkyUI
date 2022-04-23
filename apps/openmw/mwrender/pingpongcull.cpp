@@ -27,18 +27,18 @@ namespace MWRender
     {
         osgUtil::RenderStage* renderStage = cv->getCurrentRenderStage();
 
-        unsigned int frame = cv->getTraversalNumber();
+        size_t frame = cv->getTraversalNumber();
+        size_t frameId = frame % 2;
 
         MWRender::PostProcessor* postProcessor = dynamic_cast<MWRender::PostProcessor*>(cv->getCurrentCamera()->getUserData());
 
         if (!postProcessor)
         {
-            Log(Debug::Error) << "Failed retrieving user data for master camera: FBO setup failed";
+            renderStage->setMultisampleResolveFramebufferObject(nullptr);
+            renderStage->setFrameBufferObject(nullptr);
             traverse(node, cv);
             return;
         }
-
-        unsigned int frameId = frame % 2;
 
         if (!postProcessor->getFbo(PostProcessor::FBO_Multisample, frameId))
         {
@@ -48,6 +48,12 @@ namespace MWRender
         {
             renderStage->setMultisampleResolveFramebufferObject(postProcessor->getFbo(PostProcessor::FBO_Primary, frameId));
             renderStage->setFrameBufferObject(postProcessor->getFbo(PostProcessor::FBO_Multisample, frameId));
+        }
+
+        if (!postProcessor->isEnabled())
+        {
+            traverse(node, cv);
+            return;
         }
 
         // per-view data

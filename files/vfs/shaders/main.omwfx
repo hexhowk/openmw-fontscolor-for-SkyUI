@@ -8,7 +8,7 @@ main_pass {
 
 uniform_float uGamma {
     default = 1.0;
-    step = 0.02;
+    step = 0.01;
     min = 0.0;
     max = 5.0;
     description = "gamma level";
@@ -16,7 +16,7 @@ uniform_float uGamma {
 
 uniform_float uContrast {
     default = 1.0;
-    step = 0.02;
+    step = 0.01;
     min = 0.0;
     max = 5.0;
     description = "constrast level";

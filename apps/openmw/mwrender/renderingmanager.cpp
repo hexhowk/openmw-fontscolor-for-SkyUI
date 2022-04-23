@@ -49,7 +49,9 @@
 #include "../mwworld/class.hpp"
 #include "../mwworld/groundcoverstore.hpp"
 #include "../mwgui/loadingscreen.hpp"
+#include "../mwgui/postprocessorhud.hpp"
 #include "../mwmechanics/actorutil.hpp"
+#include "../mwbase/windowmanager.hpp"
 
 #include "sky.hpp"
 #include "effectmanager.hpp"
@@ -1322,6 +1324,17 @@ namespace MWRender
                     mStateUpdater->reset();
 
                     mViewer->startThreading();
+                }
+            }
+            else if (it->first == "Post Processing" && it->second == "enabled")
+            {
+                if (Settings::Manager::getBool("enabled", "Post Processing"))
+                    mPostProcessor->enable();
+                else
+                {
+                    mPostProcessor->disable();
+                    if (auto* hud = MWBase::Environment::get().getWindowManager()->getPostProcessorHud())
+                        hud->setVisible(false);
                 }
             }
         }

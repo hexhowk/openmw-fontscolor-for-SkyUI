@@ -39,7 +39,7 @@ hdr exposure time
 
 :Type:      float
 :Range:     0.0 to 1.0
-:Default:   0.1
+:Default:   0.05
 
 Use for eye adaptation to control speed at which average scene luminance can change from one frame to the next.
 Average scene luminance is used in some shader effects for features such as dynamic eye adaptation.

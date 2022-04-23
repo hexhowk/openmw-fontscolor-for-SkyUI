@@ -50,6 +50,7 @@ namespace MWRender
 {
     PostProcessor::PostProcessor(RenderingManager& rendering, osgViewer::Viewer* viewer, osg::Group* rootNode, const VFS::Manager* vfs)
         : osg::Group()
+        , mRootNode(rootNode)
         , mDepthFormat(GL_DEPTH24_STENCIL8)
         , mSamples(Settings::Manager::getInt("antialiasing", "Video"))
         , mDirty(false)
@@ -67,38 +68,19 @@ namespace MWRender
         , mHDR(false)
         , mMainTemplate(new osg::Texture2D)
     {
-        bool softParticles = Settings::Manager::getBool("soft particles", "Shaders");
-        bool usePostProcessing = Settings::Manager::getBool("enabled", "Post Processing");
+        mSoftParticles = Settings::Manager::getBool("soft particles", "Shaders");
+        mUsePostProcessing = Settings::Manager::getBool("enabled", "Post Processing");
 
         osg::GraphicsContext* gc = viewer->getCamera()->getGraphicsContext();
         unsigned int contextID = gc->getState()->getContextID();
         osg::GLExtensions* ext = gc->getState()->get<osg::GLExtensions>();
 
         mGLSLVersion = ext->glslLanguageVersion * 100;
-
         mUBO = ext && ext->isUniformBufferObjectSupported && mGLSLVersion >= 330;
         mStateUpdater = new fx::StateUpdater(mUBO);
 
-        if (!SceneUtil::AutoDepth::isReversed() && !softParticles && !usePostProcessing)
+        if (!SceneUtil::AutoDepth::isReversed() && !mSoftParticles && !mUsePostProcessing)
             return;
-
-        if (!usePostProcessing && !SceneUtil::AutoDepth::isReversed() && !softParticles)
-        {
-            Log(Debug::Info) << "Rendering to default framebuffer.";
-            return;
-        }
-
-        if (!ext->isFrameBufferObjectSupported)
-        {
-            Log(Debug::Warning) << "Post processing and reverse-z disabled, FBO unsupported.";
-            return;
-        }
-
-        if (mSamples > 1 && !ext->isRenderbufferMultisampleSupported())
-        {
-            Log(Debug::Warning) << "Post processing and reverse-z disabled. RenderBufferMultiSample unsupported, disabling antialiasing may resolve this issue.";
-            return;
-        }
 
         if (SceneUtil::AutoDepth::isReversed())
         {
@@ -106,68 +88,9 @@ namespace MWRender
                 mDepthFormat = GL_DEPTH32F_STENCIL8;
             else if (osg::isGLExtensionSupported(contextID, "GL_NV_depth_buffer_float"))
                 mDepthFormat = GL_DEPTH32F_STENCIL8_NV;
-            else
-                Log(Debug::Warning) << "Floating point depth buffer disabled, 'GL_ARB_depth_buffer_float' and 'GL_NV_depth_buffer_float' unsupported. reverse-z will not benefit the scene.";
         }
 
-        mEnabled = true;
-        mUsePostProcessing = usePostProcessing;
-        mSoftParticles = softParticles;
-
-#ifdef ANDROID
-        mDisableDepthPasses = true;
-#else
-        mDisableDepthPasses = !usePostProcessing && !mSoftParticles;
-#endif
-
-        if (!mDisableDepthPasses)
-        {
-            mTransparentDepthPostPass = new TransparentDepthBinCallback(mRendering.getResourceSystem()->getSceneManager()->getShaderManager(), Settings::Manager::getBool("transparent postpass", "Post Processing"));
-            osgUtil::RenderBin::getRenderBinPrototype("DepthSortedBin")->setDrawCallback(mTransparentDepthPostPass);
-        }
-
-        if (mUsePostProcessing)
-        {
-            for (const auto& name : mVFS->getRecursiveDirectoryIterator(fx::Technique::sSubdir))
-            {
-                std::filesystem::path path = name;
-                std::string fileExt = Misc::StringUtils::lowerCase(path.extension().string());
-                if (!path.parent_path().has_parent_path() && fileExt == fx::Technique::sExt)
-                {
-                    auto absolutePath = std::filesystem::path(mVFS->getAbsoluteFileName(name));
-
-                    mTechniqueFileMap[absolutePath.stem().string()] = absolutePath;
-                }
-            }
-        }
-
-        mMainTemplate->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
-        mMainTemplate->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
-        mMainTemplate->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-        mMainTemplate->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-        mMainTemplate->setInternalFormat(GL_RGBA);
-        mMainTemplate->setSourceType(GL_UNSIGNED_BYTE);
-        mMainTemplate->setSourceFormat(GL_RGBA);
-
-        createTexturesAndCamera(width(), height());
-
-        addChild(mHUDCamera);
-        addChild(rootNode);
-
-        mViewer->setSceneData(this);
-
-        mViewer->getCamera()->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
-
-        // Not redundant! We change renderstage FBOs during cull traversals
-        mViewer->getCamera()->setImplicitBufferAttachmentMask(0, 0);
-
-        mViewer->getCamera()->getGraphicsContext()->setResizedCallback(new ResizedCallback(this));
-        mViewer->getCamera()->setUserData(this);
-
-        addCullCallback(mStateUpdater);
-        mHUDCamera->setCullCallback(new SceneUtil::StateSetUpdater);
-
-        mReload = true;
+        enable(mUsePostProcessing);
     }
 
     PostProcessor::~PostProcessor()
@@ -206,6 +129,94 @@ namespace MWRender
 
         mDirty = true;
         mDirtyFrameId = !frameId;
+    }
+
+    void PostProcessor::enable(bool usePostProcessing)
+    {
+        mReload = true;
+        mEnabled = true;
+        mUsePostProcessing = usePostProcessing;
+
+#ifdef ANDROID
+        mDisableDepthPasses = true;
+#endif
+
+        if (!mDisableDepthPasses)
+        {
+            mTransparentDepthPostPass = new TransparentDepthBinCallback(mRendering.getResourceSystem()->getSceneManager()->getShaderManager(), Settings::Manager::getBool("transparent postpass", "Post Processing"));
+            osgUtil::RenderBin::getRenderBinPrototype("DepthSortedBin")->setDrawCallback(mTransparentDepthPostPass);
+        }
+
+        if (mUsePostProcessing && mTechniqueFileMap.empty())
+        {
+            for (const auto& name : mVFS->getRecursiveDirectoryIterator(fx::Technique::sSubdir))
+            {
+                std::filesystem::path path = name;
+                std::string fileExt = Misc::StringUtils::lowerCase(path.extension().string());
+                if (!path.parent_path().has_parent_path() && fileExt == fx::Technique::sExt)
+                {
+                    auto absolutePath = std::filesystem::path(mVFS->getAbsoluteFileName(name));
+
+                    mTechniqueFileMap[absolutePath.stem().string()] = absolutePath;
+                }
+            }
+        }
+
+        mMainTemplate->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
+        mMainTemplate->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+        mMainTemplate->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+        mMainTemplate->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+        mMainTemplate->setInternalFormat(GL_RGBA);
+        mMainTemplate->setSourceType(GL_UNSIGNED_BYTE);
+        mMainTemplate->setSourceFormat(GL_RGBA);
+
+        createTexturesAndCamera(width(), height());
+
+        removeChild(mHUDCamera);
+        removeChild(mRootNode);
+
+        addChild(mHUDCamera);
+        addChild(mRootNode);
+
+        mViewer->setSceneData(this);
+        mViewer->getCamera()->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
+        mViewer->getCamera()->setImplicitBufferAttachmentMask(0, 0);
+        mViewer->getCamera()->getGraphicsContext()->setResizedCallback(new ResizedCallback(this));
+        mViewer->getCamera()->setUserData(this);
+
+        setCullCallback(mStateUpdater);
+        mHUDCamera->setCullCallback(new SceneUtil::StateSetUpdater);
+
+        static bool init = false;
+
+        if (init)
+        {
+            resize(width(), height());
+            init = true;
+        }
+
+        init = true;
+    }
+
+    void PostProcessor::disable()
+    {
+        if (!mSoftParticles)
+            osgUtil::RenderBin::getRenderBinPrototype("DepthSortedBin")->setDrawCallback(nullptr);
+
+        if (!SceneUtil::AutoDepth::isReversed() && !mSoftParticles)
+        {
+            removeChild(mHUDCamera);
+            setCullCallback(nullptr);
+
+            mViewer->getCamera()->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER);
+            mViewer->getCamera()->getGraphicsContext()->setResizedCallback(nullptr);
+            mViewer->getCamera()->setUserData(nullptr);
+
+            mEnabled = false;
+        }
+
+        mUsePostProcessing = false;
+        mRendering.getSkyManager()->setSunglare(true);
     }
 
     void PostProcessor::traverse(osg::NodeVisitor& nv)
@@ -282,9 +293,14 @@ namespace MWRender
             mDirty = false;
         }
 
+        mPingPongCanvas->setPostProcessing(frameId, mUsePostProcessing);
+        mPingPongCanvas->setFallbackFbo(frameId, getFbo(FBO_Primary, frameId));
+
+        if (!mUsePostProcessing)
+            return;
+
         mPingPongCanvas->setMask(frameId, mUnderwater, mExteriorFlag);
         mPingPongCanvas->setHDR(frameId, getHDR());
-        mPingPongCanvas->setFallbackFbo(frameId, getFbo(FBO_Primary, frameId));
         mPingPongCanvas->setSceneTexture(frameId, getTexture(Tex_Scene, frameId));
         mPingPongCanvas->setLDRSceneTexture(frameId, getTexture(Tex_Scene_LDR, frameId));
 
@@ -565,9 +581,10 @@ namespace MWRender
         mHUDCamera->setViewport(0, 0, width, height);
 
         mPingPongCull = new PingPongCull;
+        mViewer->getCamera()->removeCullCallback(mPingPongCull);
         mViewer->getCamera()->addCullCallback(mPingPongCull);
 
-        mPingPongCanvas = new PingPongCanvas(mUsePostProcessing, mRendering.getResourceSystem()->getSceneManager()->getShaderManager());
+        mPingPongCanvas = new PingPongCanvas(mRendering.getResourceSystem()->getSceneManager()->getShaderManager());
 
         mHUDCamera->addChild(mPingPongCanvas);
         mHUDCamera->setNodeMask(Mask_RenderToTexture);

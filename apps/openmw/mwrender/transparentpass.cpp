@@ -82,9 +82,7 @@ namespace MWRender
             bin->drawImplementation(renderInfo, previous);
             bin->setStateSet(restore);
 
-            if (msaaFbo)
-                msaaFbo->apply(state, osg::FrameBufferObject::DRAW_FRAMEBUFFER);
-            else
+            if (!msaaFbo)
                 fbo->apply(state, osg::FrameBufferObject::DRAW_FRAMEBUFFER);
         }
 

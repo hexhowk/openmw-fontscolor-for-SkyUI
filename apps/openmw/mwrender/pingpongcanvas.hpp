@@ -23,7 +23,7 @@ namespace MWRender
     class PingPongCanvas : public osg::Geometry
     {
     public:
-        PingPongCanvas(bool usePostProcessing, Shader::ShaderManager& shaderManager);
+        PingPongCanvas(Shader::ShaderManager& shaderManager);
 
         void drawImplementation(osg::RenderInfo& renderInfo) const override;
 
@@ -46,6 +46,8 @@ namespace MWRender
 
         void setHDR(size_t frameId, bool hdr) { mBufferData[frameId].hdr = hdr; }
 
+        void setPostProcessing(size_t frameId, bool postprocessing) { mBufferData[frameId].postprocessing = postprocessing; }
+
         const osg::ref_ptr<osg::Texture2D>& getSceneTexture(size_t frameId) const { return mBufferData[frameId].sceneTex; }
 
         void drawGeometry(osg::RenderInfo& renderInfo) const;
@@ -54,8 +56,6 @@ namespace MWRender
         void copyNewFrameData(size_t frameId) const;
 
         mutable bool mLoggedErrorLastFrame;
-        const bool mUsePostProcessing;
-
         mutable HDRDriver mHDRDriver;
 
         osg::ref_ptr<osg::Program> mFallbackProgram;
@@ -64,6 +64,7 @@ namespace MWRender
         {
             bool dirty = false;
             bool hdr = false;
+            bool postprocessing = true;
 
             fx::DispatchArray data;
             fx::FlagsType mask;
