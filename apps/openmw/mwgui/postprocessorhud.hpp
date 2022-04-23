@@ -76,6 +76,8 @@ namespace MWGui
 
         void moveShader(Direction direction);
 
+        void toggleTechnique(bool enabled);
+
         void select(ListWrapper* list, size_t index);
 
         void layout();

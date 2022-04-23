@@ -129,16 +129,32 @@ namespace MWGui
         updateConfigView(sender->getItemNameAt(index));
     }
 
+    void PostProcessorHud::toggleTechnique(bool enabled)
+    {
+        auto* list = enabled ? mInactiveList : mActiveList;
+
+        size_t selected = list->getIndexSelected();
+
+        if (selected != MyGUI::ITEM_NONE)
+        {
+            auto* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
+            mOverrideHint = list->getItemNameAt(selected);
+            if (enabled)
+                processor->enableTechnique(*list->getItemDataAt<std::shared_ptr<fx::Technique>>(selected));
+            else
+                processor->disableTechnique(*list->getItemDataAt<std::shared_ptr<fx::Technique>>(selected));
+            saveChain();
+        }
+    }
+
     void PostProcessorHud::notifyActivatePressed(MyGUI::Widget* sender)
     {
-        if (mInactiveList->getIndexSelected() != MyGUI::ITEM_NONE)
-            notifyKeyButtonPressed(mInactiveList, MyGUI::KeyCode::ArrowRight, MyGUI::Char{});
+        toggleTechnique(true);
     }
 
     void PostProcessorHud::notifyDeactivatePressed(MyGUI::Widget* sender)
     {
-        if (mActiveList->getIndexSelected() != MyGUI::ITEM_NONE)
-            notifyKeyButtonPressed(mActiveList, MyGUI::KeyCode::ArrowLeft, MyGUI::Char{});
+        toggleTechnique(false);
     }
 
     void PostProcessorHud::moveShader(Direction direction)
@@ -172,43 +188,35 @@ namespace MWGui
 
     void PostProcessorHud::notifyKeyButtonPressed(MyGUI::Widget* sender, MyGUI::KeyCode key, MyGUI::Char ch)
     {
-        auto* processor = MWBase::Environment::get().getWorld()->getPostProcessor();
-
         MyGUI::ListBox* list = static_cast<MyGUI::ListBox*>(sender);
 
-        size_t selected = list->getIndexSelected();
-
-        if (selected == MyGUI::ITEM_NONE)
+        if (list->getIndexSelected() == MyGUI::ITEM_NONE)
             return;
 
         if (key == MyGUI::KeyCode::ArrowLeft && list == mActiveList)
         {
             if (MyGUI::InputManager::getInstance().isShiftPressed())
             {
-                MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(mInactiveList);
-                mActiveList->clearIndexSelected();
-                select(mInactiveList, 0);
+                toggleTechnique(false);
             }
             else
             {
-                mOverrideHint = mActiveList->getItemNameAt(selected);
-                processor->disableTechnique(*mActiveList->getItemDataAt<std::shared_ptr<fx::Technique>>(selected));
-                saveChain();
+                MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(mInactiveList);
+                mActiveList->clearIndexSelected();
+                select(mInactiveList, 0);
             }
         }
         else if (key == MyGUI::KeyCode::ArrowRight && list == mInactiveList)
         {
             if (MyGUI::InputManager::getInstance().isShiftPressed())
             {
-                MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(mActiveList);
-                mInactiveList->clearIndexSelected();
-                select(mActiveList, 0);
+                toggleTechnique(true);
             }
             else
             {
-                mOverrideHint = mInactiveList->getItemNameAt(selected);
-                processor->enableTechnique(*mInactiveList->getItemDataAt<std::shared_ptr<fx::Technique>>(selected));
-                saveChain();
+                MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(mActiveList);
+                mInactiveList->clearIndexSelected();
+                select(mActiveList, 0);
             }
         }
         else if (list == mActiveList && MyGUI::InputManager::getInstance().isShiftPressed() && (key == MyGUI::KeyCode::ArrowUp || key == MyGUI::KeyCode::ArrowDown))
