@@ -111,10 +111,10 @@ namespace MWRender
             }
         }
 
-        if (resizeAttachments)
-            createTexturesAndCamera(width, height);
-
         size_t frameId = frame() % 2;
+
+        if (resizeAttachments)
+            createTexturesAndCamera(frameId, width, height);
 
         createObjectsForFrame(frameId, width, height);
 
@@ -170,7 +170,7 @@ namespace MWRender
         mMainTemplate->setSourceType(GL_UNSIGNED_BYTE);
         mMainTemplate->setSourceFormat(GL_RGBA);
 
-        createTexturesAndCamera(width(), height());
+        createTexturesAndCamera(frame() % 2, width(), height());
 
         removeChild(mHUDCamera);
         removeChild(mRootNode);
@@ -289,6 +289,7 @@ namespace MWRender
 
         if (mDirty && mDirtyFrameId == frameId)
         {
+            createTexturesAndCamera(frameId, width(), height());
             createObjectsForFrame(frameId, width(), height());
             mDirty = false;
         }
@@ -520,53 +521,52 @@ namespace MWRender
         return false;
     }
 
-    void PostProcessor::createTexturesAndCamera(int width, int height)
+    void PostProcessor::createTexturesAndCamera(size_t frameId, int width, int height)
     {
-        for (auto& textures : mTextures)
+        auto& textures = mTextures[frameId];
+
+        for (auto& texture : textures)
         {
-            for (auto& texture : textures)
-            {
-                if (!texture)
-                    texture = new osg::Texture2D;
-                texture->setTextureSize(width, height);
-                texture->setSourceFormat(GL_RGBA);
-                texture->setSourceType(GL_UNSIGNED_BYTE);
-                texture->setInternalFormat(GL_RGBA);
-                texture->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture::LINEAR);
-                texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture::LINEAR);
-                texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-                texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-                texture->setResizeNonPowerOfTwoHint(false);
-            }
+            if (!texture)
+                texture = new osg::Texture2D;
+            texture->setTextureSize(width, height);
+            texture->setSourceFormat(GL_RGBA);
+            texture->setSourceType(GL_UNSIGNED_BYTE);
+            texture->setInternalFormat(GL_RGBA);
+            texture->setFilter(osg::Texture2D::MIN_FILTER, osg::Texture::LINEAR);
+            texture->setFilter(osg::Texture2D::MAG_FILTER, osg::Texture::LINEAR);
+            texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+            texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+            texture->setResizeNonPowerOfTwoHint(false);
+        }
 
-            if (mMainTemplate)
-            {
-                textures[Tex_Scene]->setSourceFormat(mMainTemplate->getSourceFormat());
-                textures[Tex_Scene]->setSourceType(mMainTemplate->getSourceType());
-                textures[Tex_Scene]->setInternalFormat(mMainTemplate->getInternalFormat());
-                textures[Tex_Scene]->setFilter(osg::Texture2D::MIN_FILTER, mMainTemplate->getFilter(osg::Texture2D::MIN_FILTER));
-                textures[Tex_Scene]->setFilter(osg::Texture2D::MAG_FILTER, mMainTemplate->getFilter(osg::Texture2D::MAG_FILTER));
-                textures[Tex_Scene]->setWrap(osg::Texture::WRAP_S, mMainTemplate->getWrap(osg::Texture2D::WRAP_S));
-                textures[Tex_Scene]->setWrap(osg::Texture::WRAP_T, mMainTemplate->getWrap(osg::Texture2D::WRAP_T));
-            }
+        if (mMainTemplate)
+        {
+            textures[Tex_Scene]->setSourceFormat(mMainTemplate->getSourceFormat());
+            textures[Tex_Scene]->setSourceType(mMainTemplate->getSourceType());
+            textures[Tex_Scene]->setInternalFormat(mMainTemplate->getInternalFormat());
+            textures[Tex_Scene]->setFilter(osg::Texture2D::MIN_FILTER, mMainTemplate->getFilter(osg::Texture2D::MIN_FILTER));
+            textures[Tex_Scene]->setFilter(osg::Texture2D::MAG_FILTER, mMainTemplate->getFilter(osg::Texture2D::MAG_FILTER));
+            textures[Tex_Scene]->setWrap(osg::Texture::WRAP_S, mMainTemplate->getWrap(osg::Texture2D::WRAP_S));
+            textures[Tex_Scene]->setWrap(osg::Texture::WRAP_T, mMainTemplate->getWrap(osg::Texture2D::WRAP_T));
+        }
 
-            auto setupDepth = [this] (osg::Texture2D* tex) {
-                tex->setSourceFormat(GL_DEPTH_STENCIL_EXT);
-                tex->setSourceType(SceneUtil::isFloatingPointDepthFormat(omw_GetDepthFormat()) ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_UNSIGNED_INT_24_8_EXT);
-                tex->setInternalFormat(mDepthFormat);
-            };
+        auto setupDepth = [this] (osg::Texture2D* tex) {
+            tex->setSourceFormat(GL_DEPTH_STENCIL_EXT);
+            tex->setSourceType(SceneUtil::isFloatingPointDepthFormat(omw_GetDepthFormat()) ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_UNSIGNED_INT_24_8_EXT);
+            tex->setInternalFormat(mDepthFormat);
+        };
 
-            setupDepth(textures[Tex_Depth]);
+        setupDepth(textures[Tex_Depth]);
 
-            if (mDisableDepthPasses)
-            {
-                textures[Tex_OpaqueDepth] = nullptr;
-            }
-            else
-            {
-                setupDepth(textures[Tex_OpaqueDepth]);
-                textures[Tex_OpaqueDepth]->setName("opaqueTexMap");
-            }
+        if (mDisableDepthPasses)
+        {
+            textures[Tex_OpaqueDepth] = nullptr;
+        }
+        else
+        {
+            setupDepth(textures[Tex_OpaqueDepth]);
+            textures[Tex_OpaqueDepth]->setName("opaqueTexMap");
         }
 
         if (mHUDCamera)

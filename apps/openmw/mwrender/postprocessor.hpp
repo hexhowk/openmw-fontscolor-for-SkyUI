@@ -158,7 +158,7 @@ namespace MWRender
 
         void createObjectsForFrame(size_t frameId, int width, int height);
 
-        void createTexturesAndCamera(int width, int height);
+        void createTexturesAndCamera(size_t frameId, int width, int height);
 
         void reloadTechniques();
 
