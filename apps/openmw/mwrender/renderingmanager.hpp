@@ -128,6 +128,7 @@ namespace MWRender
 
         void setSunDirection(const osg::Vec3f& direction);
         void setSunColour(const osg::Vec4f& diffuse, const osg::Vec4f& specular, float sunVis);
+        void setNight(bool isNight) { mNight = isNight; }
 
         void configureAmbient(const ESM::Cell* cell);
         void configureFog(const ESM::Cell* cell);
@@ -308,6 +309,7 @@ namespace MWRender
         float mFieldOfView;
         float mFirstPersonFieldOfView;
         bool mUpdateProjectionMatrix = false;
+        bool mNight = false;
 
         void operator = (const RenderingManager&);
         RenderingManager(const RenderingManager&);

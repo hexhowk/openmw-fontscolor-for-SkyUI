@@ -701,7 +701,7 @@ namespace MWRender
 
         mSky->setSunDirection(position);
 
-        mPostProcessor->getStateUpdater()->setSunPos(mSunLight->getPosition());
+        mPostProcessor->getStateUpdater()->setSunPos(mSunLight->getPosition(), mNight);
     }
 
     void RenderingManager::addCell(const MWWorld::CellStore *store)

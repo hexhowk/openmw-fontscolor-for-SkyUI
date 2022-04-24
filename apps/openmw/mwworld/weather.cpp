@@ -786,6 +786,7 @@ namespace MWWorld
                 -0.268f, // approx tan( -15 degrees )
                 static_cast<float>(sin(theta)));
             mRendering.setSunDirection( final * -1 );
+            mRendering.setNight(is_night);
         }
 
         float underwaterFog = mUnderwaterFog.getValue(time.getHour(), mTimeSettings, "Fog");

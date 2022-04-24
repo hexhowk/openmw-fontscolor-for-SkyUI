@@ -33,7 +33,13 @@ namespace fx
 
         void setSunColor(const osg::Vec4f& color) { mData.get<SunColor>() = color; }
 
-        void setSunPos(const osg::Vec4f& pos) { mData.get<SunPos>() = pos; }
+        void setSunPos(const osg::Vec4f& pos, bool night)
+        {
+            mData.get<SunPos>() = pos;
+
+            if (night)
+                mData.get<SunPos>().z() *= -1.f;
+        }
 
         void setResolution(const osg::Vec2f& size)
         {
@@ -44,8 +50,6 @@ namespace fx
         void setSunVis(float vis)
         {
             mData.get<SunVis>() = vis;
-            if (vis <= 0.f)
-                mData.get<SunPos>().z() *= -1.f;
         }
 
         void setFogRange(float near, float far)
