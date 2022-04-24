@@ -66,6 +66,9 @@ namespace MWRender
         , mExteriorFlag(false)
         , mUnderwater(false)
         , mHDR(false)
+        , mNormals(false)
+        , mPrevNormals(false)
+        , mNormalsSupported(false)
         , mMainTemplate(new osg::Texture2D)
     {
         mSoftParticles = Settings::Manager::getBool("soft particles", "Shaders");
@@ -74,6 +77,9 @@ namespace MWRender
         osg::GraphicsContext* gc = viewer->getCamera()->getGraphicsContext();
         unsigned int contextID = gc->getState()->getContextID();
         osg::GLExtensions* ext = gc->getState()->get<osg::GLExtensions>();
+
+        if (ext->glVersion > 3.f && osg::getGLExtensionFuncPtr("glDisablei"))
+            mNormalsSupported = true;
 
         mGLSLVersion = ext->glslLanguageVersion * 100;
         mUBO = ext && ext->isUniformBufferObjectSupported && mGLSLVersion >= 330;
@@ -292,10 +298,25 @@ namespace MWRender
             createTexturesAndCamera(frameId, width(), height());
             createObjectsForFrame(frameId, width(), height());
             mDirty = false;
+
+            if (mNormalsSupported && mNormals != mPrevNormals)
+            {
+                mPrevNormals = mNormals;
+
+                mViewer->stopThreading();
+
+                auto& shaderManager = MWBase::Environment::get().getResourceSystem()->getSceneManager()->getShaderManager();
+                auto defines = shaderManager.getGlobalDefines();
+                defines["disableGlobalNormals"] = mNormals ? "0" : "1";
+                shaderManager.setGlobalDefines(defines);
+
+                mViewer->startThreading();
+            }
         }
 
         mPingPongCanvas->setPostProcessing(frameId, mUsePostProcessing);
         mPingPongCanvas->setFallbackFbo(frameId, getFbo(FBO_Primary, frameId));
+        mPingPongCanvas->setNormalsTexture(frameId, mNormals ? getTexture(Tex_Normal, frameId) : nullptr);
 
         if (!mUsePostProcessing)
             return;
@@ -327,6 +348,7 @@ namespace MWRender
 
         fbos[FBO_Primary] = new osg::FrameBufferObject;
         fbos[FBO_Primary]->setAttachment(osg::Camera::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
+        fbos[FBO_Primary]->setAttachment(osg::Camera::COLOR_BUFFER1, osg::FrameBufferAttachment(textures[Tex_Normal]));
         fbos[FBO_Primary]->setAttachment(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(textures[Tex_Depth]));
 
         fbos[FBO_FirstPerson] = new osg::FrameBufferObject;
@@ -340,13 +362,16 @@ namespace MWRender
         {
             fbos[FBO_Multisample] = new osg::FrameBufferObject;
             osg::ref_ptr<osg::RenderBuffer> colorRB = new osg::RenderBuffer(width, height, textures[Tex_Scene]->getInternalFormat(), mSamples);
+            osg::ref_ptr<osg::RenderBuffer> normalRB = new osg::RenderBuffer(width, height, textures[Tex_Normal]->getInternalFormat(), mSamples);
             osg::ref_ptr<osg::RenderBuffer> depthRB = new osg::RenderBuffer(width, height, textures[Tex_Depth]->getInternalFormat(), mSamples);
             fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
+            fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(normalRB));
             fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(depthRB));
             fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
 
             fbos[FBO_Intercept] = new osg::FrameBufferObject;
             fbos[FBO_Intercept]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
+            fbos[FBO_Intercept]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(textures[Tex_Normal]));
         }
         else
             fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
@@ -379,6 +404,7 @@ namespace MWRender
 
         bool sunglare = true;
         mHDR = false;
+        mNormals = false;
 
         for (const auto& technique : mTechniques)
         {
@@ -398,6 +424,9 @@ namespace MWRender
             if (technique->getHDR())
                 mHDR = true;
 
+            if (technique->getNormals())
+                mNormals = true;
+
             if (node.mFlags & fx::Technique::Flag_Disable_SunGlare)
                 sunglare = false;
 
@@ -405,6 +434,9 @@ namespace MWRender
             node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerLastShader", Unit_LastShader));
             node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerLastPass", Unit_LastPass));
             node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerDepth", Unit_Depth));
+
+            if (mNormals)
+                node.mRootStateSet->addUniform(new osg::Uniform("omw_SamplerNormals", Unit_Normals));
 
             if (technique->getHDR())
                 node.mRootStateSet->addUniform(new osg::Uniform("omw_EyeAdaptation", Unit_EyeAdaptation));
@@ -540,6 +572,9 @@ namespace MWRender
             texture->setResizeNonPowerOfTwoHint(false);
         }
 
+        textures[Tex_Normal]->setSourceFormat(GL_RGB);
+        textures[Tex_Normal]->setInternalFormat(GL_RGB);
+
         if (mMainTemplate)
         {
             textures[Tex_Scene]->setSourceFormat(mMainTemplate->getSourceFormat());
@@ -602,7 +637,7 @@ namespace MWRender
             if (name == mTemplates[i]->getName())
                 return mTemplates[i];
 
-        auto technique = std::make_shared<fx::Technique>(*mVFS, *mRendering.getResourceSystem()->getImageManager(), name, width(), height(), mUBO);
+        auto technique = std::make_shared<fx::Technique>(*mVFS, *mRendering.getResourceSystem()->getImageManager(), name, width(), height(), mUBO, mNormalsSupported);
 
         technique->compile();
 

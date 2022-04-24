@@ -6,6 +6,7 @@
 #include <osg/Texture2D>
 #include <osg/TexMat>
 #include <osg/BlendFunc>
+#include <osg/Capability>
 
 #include <components/shader/shadermanager.hpp>
 #include <components/sceneutil/depth.hpp>
@@ -208,6 +209,7 @@ namespace Terrain
             if (!blendmaps.empty())
             {
                 stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
+                stateset->setAttribute( new osg::Disablei(GL_BLEND, 1) );
                 stateset->setRenderBinDetails(firstLayer ? 0 : 1, "RenderBin");
                 if (!firstLayer)
                 {
@@ -250,6 +252,7 @@ namespace Terrain
                 defineMap["blendMap"] = (!blendmaps.empty()) ? "1" : "0";
                 defineMap["specularMap"] = it->mSpecular ? "1" : "0";
                 defineMap["parallax"] = (it->mNormalMap && it->mParallax) ? "1" : "0";
+                defineMap["writeNormals"] = (it == layers.end() - 1) ? "1" : "0";
 
                 osg::ref_ptr<osg::Shader> vertexShader = shaderManager->getShader("terrain_vertex.glsl", defineMap, osg::Shader::VERTEX);
                 osg::ref_ptr<osg::Shader> fragmentShader = shaderManager->getShader("terrain_fragment.glsl", defineMap, osg::Shader::FRAGMENT);

@@ -35,6 +35,8 @@ Builtin Samplers
 +-------------+-----------------------+---------------------------------------------+
 | sampler2D   | omw_SamplerDepth      | Non-linear normalized depth                 |
 +-------------+-----------------------+---------------------------------------------+
+| sampler2D   | omw_SamplerNormals    | Normalized world-space normals [0, 1]       |
++-------------+-----------------------+---------------------------------------------+
 
 Builtin Uniforms
 ################
@@ -133,6 +135,12 @@ Builtin Macros
 |                  |                | ``0``  Average scene luminance is not computed                            |
 |                  |                |                                                                           |
 |                  |                | ``1``  Average scene luminance is computed                                |
++------------------+----------------+---------------------------------------------------------------------------+
+|    OMW_NORMALS   | ``0`` or ``1`` | Whether normals are available as a sampler in the technique.              |
+|                  |                |                                                                           |
+|                  |                | ``0``  Normals are not available                                          |
+|                  |                |                                                                           |
+|                  |                | ``1``  Normals are available.                                             |
 +------------------+----------------+---------------------------------------------------------------------------+
 
 Builtin Functions
@@ -278,6 +286,10 @@ Exactly one ``technique`` block is required for every shader file. In this we de
 | glsl_extensions  | literal list       | ``,`` separated list of required GLSL extensions  |
 +------------------+--------------------+---------------------------------------------------+
 | hdr              | boolean            | Whether HDR eye adaptation is required.           |
++------------------+--------------------+---------------------------------------------------+
+| pass_normals     | boolean            | Pass normals from the forward passes.             |
+|                  |                    |                                                   |
+|                  |                    | If unsupported, `OMW_NORMALS` will be set to `0`  |
 +------------------+--------------------+---------------------------------------------------+
 | flags            | `SHADER_FLAG`_     | ``,`` separated list of shader flags              |
 +------------------+--------------------+---------------------------------------------------+

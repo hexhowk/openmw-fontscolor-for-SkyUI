@@ -109,7 +109,7 @@ namespace fx
         static constexpr FlagsType Flag_Disable_SunGlare = (1 << 4);
         static constexpr FlagsType Flag_Hidden = (1 << 5);
 
-        Technique(const VFS::Manager& vfs, Resource::ImageManager& imageManager, const std::string& name, int width, int height, bool ubo);
+        Technique(const VFS::Manager& vfs, Resource::ImageManager& imageManager, const std::string& name, int width, int height, bool ubo, bool supportsNormals);
 
         bool compile();
 
@@ -126,6 +126,8 @@ namespace fx
         bool isValid() const { return mValid; }
 
         bool getHDR() const { return mHDR; }
+
+        bool getNormals() const { return mNormals && mSupportsNormals; }
 
         const PassList& getPasses() { return mPasses; }
 
@@ -250,6 +252,7 @@ namespace fx
         bool mDirty;
         bool mValid;
         bool mHDR;
+        bool mNormals;
         int mWidth;
         int mHeight;
 
@@ -269,6 +272,7 @@ namespace fx
         const VFS::Manager& mVFS;
         Resource::ImageManager& mImageManager;
         bool mUBO;
+        bool mSupportsNormals;
 
         std::string mBuffer;
 

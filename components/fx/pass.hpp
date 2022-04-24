@@ -39,7 +39,7 @@ namespace fx
 
         friend class Technique;
 
-        Pass(Type type=Type::Pixel, Order order=Order::Post, bool ubo=false);
+        Pass(Type type=Type::Pixel, Order order=Order::Post, bool ubo = false);
 
         void compile(Technique& technique, std::string_view preamble);
 
@@ -65,6 +65,7 @@ namespace fx
         std::string mName;
         bool mLegacyGLSL;
         bool mUBO;
+        bool mSupportsNormals;
 
         std::string_view mTarget;
         std::optional<osg::Vec4f> mClearColor;

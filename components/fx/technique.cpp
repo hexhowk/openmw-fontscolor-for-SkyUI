@@ -40,7 +40,7 @@ namespace
 
 namespace fx
 {
-    Technique::Technique(const VFS::Manager& vfs, Resource::ImageManager& imageManager, const std::string& name, int width, int height, bool ubo)
+    Technique::Technique(const VFS::Manager& vfs, Resource::ImageManager& imageManager, const std::string& name, int width, int height, bool ubo, bool supportsNormals)
         : mName(name)
         , mFileName((std::filesystem::path(Technique::sSubdir) / (mName + Technique::sExt)).string())
         , mLastModificationTime(std::filesystem::file_time_type())
@@ -49,6 +49,7 @@ namespace fx
         , mVFS(vfs)
         , mImageManager(imageManager)
         , mUBO(ubo)
+        , mSupportsNormals(supportsNormals)
     {
         clear();
     }
@@ -60,6 +61,7 @@ namespace fx
         mDirty = false;
         mValid = false;
         mHDR = false;
+        mNormals = false;
         mEnabled = true;
         mPassMap.clear();
         mPasses.clear();
@@ -233,6 +235,8 @@ namespace fx
                 mFlags = parseFlags();
             else if (key == "hdr")
                 mHDR = parseBool();
+            else if (key == "pass_normals")
+                mNormals = parseBool() && mSupportsNormals;
             else if (key == "glsl_profile")
             {
                 expect<Lexer::String>();

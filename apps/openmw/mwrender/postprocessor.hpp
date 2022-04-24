@@ -48,7 +48,7 @@ namespace MWRender
     {
     public:
         using FBOArray = std::array<osg::ref_ptr<osg::FrameBufferObject>, 5>;
-        using TextureArray = std::array<osg::ref_ptr<osg::Texture2D>, 4>;
+        using TextureArray = std::array<osg::ref_ptr<osg::Texture2D>, 5>;
         using TechniqueList = std::vector<std::shared_ptr<fx::Technique>>;
 
         enum TextureIndex
@@ -56,7 +56,8 @@ namespace MWRender
             Tex_Scene,
             Tex_Scene_LDR,
             Tex_Depth,
-            Tex_OpaqueDepth
+            Tex_OpaqueDepth,
+            Tex_Normal
         };
 
         enum FBOIndex
@@ -74,6 +75,7 @@ namespace MWRender
             Unit_LastPass,
             Unit_Depth,
             Unit_EyeAdaptation,
+            Unit_Normals,
             Unit_NextFree
         };
 
@@ -200,6 +202,10 @@ namespace MWRender
         bool mExteriorFlag;
         bool mUnderwater;
         bool mHDR;
+        bool mNormals;
+        bool mPrevNormals;
+        bool mNormalsSupported;
+        bool mNormalsNeedReloading;
         bool mUBO;
         int mGLSLVersion;
 

@@ -185,6 +185,9 @@ namespace MWRender
             if (bufferData.hdr)
                 node.mRootStateSet->setTextureAttribute(PostProcessor::TextureUnits::Unit_EyeAdaptation, mHDRDriver.getLuminanceTexture(frameId));
 
+            if (bufferData.normalsTex)
+                node.mRootStateSet->setTextureAttribute(PostProcessor::TextureUnits::Unit_Normals, bufferData.normalsTex);
+
             state.pushStateSet(node.mRootStateSet);
             state.apply();
 

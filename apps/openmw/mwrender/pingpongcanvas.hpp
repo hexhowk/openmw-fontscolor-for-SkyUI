@@ -44,6 +44,8 @@ namespace MWRender
 
         void setDepthTexture(size_t frameId, osg::ref_ptr<osg::Texture2D> tex) { mBufferData[frameId].depthTex = tex; }
 
+        void setNormalsTexture(size_t frameId, osg::ref_ptr<osg::Texture2D> tex) { mBufferData[frameId].normalsTex = tex; }
+
         void setHDR(size_t frameId, bool hdr) { mBufferData[frameId].hdr = hdr; }
 
         void setPostProcessing(size_t frameId, bool postprocessing) { mBufferData[frameId].postprocessing = postprocessing; }
@@ -75,6 +77,7 @@ namespace MWRender
             osg::ref_ptr<osg::Texture2D> sceneTex;
             osg::ref_ptr<osg::Texture2D> sceneTexLDR;
             osg::ref_ptr<osg::Texture2D> depthTex;
+            osg::ref_ptr<osg::Texture2D> normalsTex;
         };
 
         mutable std::array<BufferData, 2> mBufferData;

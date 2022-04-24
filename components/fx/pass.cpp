@@ -57,6 +57,7 @@ namespace fx
 #define OMW_REVERSE_Z @reverseZ
 #define OMW_RADIAL_FOG @radialFog
 #define OMW_HDR @hdr
+#define OMW_NORMALS @normals
 #define OMW_USE_BINDINGS @useBindings
 #define omw_In @in
 #define omw_Out @out
@@ -108,6 +109,7 @@ namespace fx
             {"@extensions", extBlock.str()},
             {"@uboStruct", StateUpdater::getStructDefinition()},
             {"@ubo", mUBO ? "1" : "0"},
+            {"@normals", technique.getNormals() ? "1" : "0"},
             {"@reverseZ", SceneUtil::AutoDepth::isReversed() ? "1" : "0"},
             {"@radialFog", Settings::Manager::getBool("radial fog", "Shaders") ? "1" : "0"},
             {"@hdr", technique.getHDR() ? "1" : "0"},
