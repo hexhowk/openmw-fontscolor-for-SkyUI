@@ -241,6 +241,10 @@ namespace MWBase
 
             virtual int getCurrentWeather() const = 0;
 
+            virtual int getNextWeather() const = 0;
+
+            virtual float getWeatherTransition() const = 0;
+
             virtual unsigned int getNightDayMode() const = 0;
 
             virtual int getMasserPhase() const = 0;

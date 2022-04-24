@@ -124,6 +124,7 @@ namespace std140
         }
 
         using BufferType = std::array<char, getGPUSize()>;
+        using TupleType = std::tuple<CArgs...>;
 
         template <class T>
         typename T::Value& get()
@@ -146,6 +147,11 @@ namespace std140
             };
 
             std::apply([&] (const auto& ... v) { (copy(v) , ...); }, mData);
+        }
+
+        const auto& getData() const
+        {
+            return mData;
         }
 
     private:

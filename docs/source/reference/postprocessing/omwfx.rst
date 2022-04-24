@@ -94,6 +94,14 @@ Builtin Uniforms
 +-------------+--------------------------+--------------------------------------------------+
 | float       | omw.deltaSimulationTime  | The change in `omw.simulationTime`               |
 +-------------+--------------------------+--------------------------------------------------+
+| float       | omw.windSpeed            | The current wind speed                           |
++-------------+--------------------------+--------------------------------------------------+
+| float       | omw.weatherTransition    | The transition factor between weathers [0, 1]    |
++-------------+--------------------------+--------------------------------------------------+
+| int         | omw.weatherID            | The current weather ID                           |
++-------------+--------------------------+--------------------------------------------------+
+| int         | omw.nextWeatherID        | The next weather ID                              |
++-------------+--------------------------+--------------------------------------------------+
 | bool        | omw.isUnderwater         | True if player is submerged underwater           |
 +-------------+--------------------------+--------------------------------------------------+
 | bool        | omw.isInterior           | True if player is in an interior                 |

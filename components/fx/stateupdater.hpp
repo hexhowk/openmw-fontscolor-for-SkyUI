@@ -68,11 +68,19 @@ namespace fx
 
         void setGameHour(float hour) { mData.get<GameHour>() = hour; }
 
+        void setWeatherId(int id) { mData.get<WeatherID>() = id; }
+
+        void setNextWeatherId(int id) { mData.get<NextWeatherID>() = id; }
+
         void setWaterHeight(float height) { mData.get<WaterHeight>() = height; }
 
         void setSimulationTime(float time) { mData.get<SimulationTime>() = time; }
 
         void setDeltaSimulationTime(float time) { mData.get<DeltaSimulationTime>() = time; }
+
+        void setWindSpeed(float speed) { mData.get<WindSpeed>() = speed; }
+
+        void setWeatherTransition(float transition) { mData.get<WeatherTransition>() = transition; }
 
         static std::string getStructDefinition()
         {
@@ -125,6 +133,14 @@ namespace fx
 
         struct DeltaSimulationTime : std140::Float { static constexpr std::string_view sName = "deltaSimulationTime"; };
 
+        struct WindSpeed : std140::Float { static constexpr std::string_view sName = "windSpeed"; };
+
+        struct WeatherTransition : std140::Float { static constexpr std::string_view sName = "weatherTransition"; };
+
+        struct WeatherID : std140::Int { static constexpr std::string_view sName = "weatherID"; };
+
+        struct NextWeatherID : std140::Int { static constexpr std::string_view sName = "nextWeatherID"; };
+
         struct IsUnderwater : std140::Bool { static constexpr std::string_view sName = "isUnderwater"; };
 
         struct IsInterior : std140::Bool { static constexpr std::string_view sName = "isInterior"; };
@@ -152,6 +168,10 @@ namespace fx
             WaterHeight,
             SimulationTime,
             DeltaSimulationTime,
+            WindSpeed,
+            WeatherTransition,
+            WeatherID,
+            NextWeatherID,
             IsUnderwater,
             IsInterior
         >;

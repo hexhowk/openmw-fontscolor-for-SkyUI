@@ -850,13 +850,18 @@ namespace MWRender
         mStateUpdater->setFogEnd(fogEnd);
         setFogColor(fogColor);
 
-        auto* world = MWBase::Environment::get().getWorld();
+        MWBase::World* world = MWBase::Environment::get().getWorld();
+        const auto& stateUpdater = mPostProcessor->getStateUpdater();
 
-        mPostProcessor->getStateUpdater()->setFogRange(fogStart, fogEnd);
-        mPostProcessor->getStateUpdater()->setNearFar(mNearClip, mViewDistance);
-        mPostProcessor->getStateUpdater()->setIsUnderwater(isUnderwater);
-        mPostProcessor->getStateUpdater()->setFogColor(fogColor);
-        mPostProcessor->getStateUpdater()->setGameHour(world->getTimeStamp().getHour());
+        stateUpdater->setFogRange(fogStart, fogEnd);
+        stateUpdater->setNearFar(mNearClip, mViewDistance);
+        stateUpdater->setIsUnderwater(isUnderwater);
+        stateUpdater->setFogColor(fogColor);
+        stateUpdater->setGameHour(world->getTimeStamp().getHour());
+        stateUpdater->setWeatherId(world->getCurrentWeather());
+        stateUpdater->setNextWeatherId(world->getNextWeather());
+        stateUpdater->setWeatherTransition(world->getWeatherTransition());
+        stateUpdater->setWindSpeed(world->getWindSpeed());
         mPostProcessor->setUnderwaterFlag(isUnderwater);
     }
 

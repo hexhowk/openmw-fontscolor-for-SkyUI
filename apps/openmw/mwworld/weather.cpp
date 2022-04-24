@@ -857,11 +857,6 @@ namespace MWWorld
         mFastForward = !incremental ? true : mFastForward;
     }
 
-    unsigned int WeatherManager::getWeatherID() const
-    {
-        return mCurrentWeather;
-    }
-
     NightDayMode WeatherManager::getNightDayMode() const
     {
         return mNightDayMode;
