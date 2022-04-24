@@ -13,6 +13,7 @@
 
 #include <components/misc/stringops.hpp>
 #include <components/sceneutil/util.hpp>
+#include <components/sceneutil/clearcolor.hpp>
 #include <components/resource/scenemanager.hpp>
 
 #include "technique.hpp"
@@ -31,33 +32,6 @@ void main()
     omw_Position = vec4(omw_Vertex.xy, 0.0, 1.0);
     omw_TexCoord = omw_Position.xy * 0.5 + 0.5;
 })GLSL";
-
-    class ClearColor : public osg::StateAttribute
-    {
-    public:
-        ClearColor() : mMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) {}
-        ClearColor(const osg::Vec4f& color, GLbitfield mask) : mColor(color), mMask(mask) {}
-
-        ClearColor(const ClearColor& copy,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY)
-            : osg::StateAttribute(copy,copyop), mColor(copy.mColor), mMask(copy.mMask) {}
-
-        META_StateAttribute(fx, ClearColor, (osg::StateAttribute::Type)100)
-
-        int compare(const StateAttribute& sa) const override
-        {
-            throw std::runtime_error("ClearColor::compare: unimplemented");
-        }
-
-        void apply(osg::State& state) const override
-        {
-            glClearColor(mColor[0], mColor[1], mColor[2], mColor[3]);
-            glClear(mMask);
-        }
-
-    private:
-        osg::Vec4f mColor;
-        GLbitfield mMask;
-    };
 
 }
 
@@ -194,7 +168,7 @@ namespace fx
             stateSet->setAttribute(new osg::BlendEquation(mBlendEq.value()));
 
         if (mClearColor)
-            stateSet->setAttribute(new ClearColor(mClearColor.value(), GL_COLOR_BUFFER_BIT));
+            stateSet->setAttribute(new SceneUtil::ClearColor(mClearColor.value(), GL_COLOR_BUFFER_BIT));
     }
 
     void Pass::dirty()
