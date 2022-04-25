@@ -81,6 +81,10 @@ namespace MWRender
         if (osg::getGLExtensionFuncPtr("glDisablei"))
             mNormalsSupported = true;
 
+        if (mSoftParticles)
+            for (int i = 0; i < 2; ++i)
+                mTextures[i][Tex_OpaqueDepth] = new osg::Texture2D;
+
         mGLSLVersion = ext->glslLanguageVersion * 100;
         mUBO = ext && ext->isUniformBufferObjectSupported && mGLSLVersion >= 330;
         mStateUpdater = new fx::StateUpdater(mUBO);
