@@ -50,6 +50,8 @@ namespace Shader
 
         void setOpaqueDepthTex(osg::ref_ptr<osg::Texture2D> texturePing, osg::ref_ptr<osg::Texture2D> texturePong);
 
+        void setSupportsNormalsRT(bool supports) { mSupportsNormalsRT = supports; }
+
         void apply(osg::Node& node) override;
 
         void apply(osg::Drawable& drawable) override;
@@ -75,6 +77,8 @@ namespace Shader
 
         bool mConvertAlphaTestToAlphaToCoverage;
 
+        bool mSupportsNormalsRT;
+
         ShaderManager& mShaderManager;
         Resource::ImageManager& mImageManager;
 
@@ -89,7 +93,7 @@ namespace Shader
             bool mShaderRequired;
 
             int mColorMode;
-            
+
             bool mMaterialOverridden;
             bool mAlphaTestOverridden;
             bool mAlphaBlendOverridden;

@@ -124,7 +124,7 @@ void main()
 #endif
     gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
 
-#if !@disableGlobalNormals && @writeNormals
+#if !@disableNormals && @writeNormals
     gl_FragData[1].xyz = worldNormal.xyz * 0.5 + 0.5;
 #endif
 

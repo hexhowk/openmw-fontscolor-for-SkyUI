@@ -78,7 +78,7 @@ namespace MWRender
         unsigned int contextID = gc->getState()->getContextID();
         osg::GLExtensions* ext = gc->getState()->get<osg::GLExtensions>();
 
-        if (ext->glVersion > 3.f && osg::getGLExtensionFuncPtr("glDisablei"))
+        if (osg::getGLExtensionFuncPtr("glDisablei"))
             mNormalsSupported = true;
 
         mGLSLVersion = ext->glslLanguageVersion * 100;
@@ -307,7 +307,7 @@ namespace MWRender
 
                 auto& shaderManager = MWBase::Environment::get().getResourceSystem()->getSceneManager()->getShaderManager();
                 auto defines = shaderManager.getGlobalDefines();
-                defines["disableGlobalNormals"] = mNormals ? "0" : "1";
+                defines["disableNormals"] = mNormals ? "0" : "1";
                 shaderManager.setGlobalDefines(defines);
 
                 mViewer->startThreading();

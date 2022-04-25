@@ -253,7 +253,7 @@ void main()
     gl_FragData[0].a = 1.0;
 #endif
 
-#if !defined(FORCE_OPAQUE) && !@disableGlobalNormals
+#if !defined(FORCE_OPAQUE) && !@disableNormals
     gl_FragData[1].xyz = worldNormal * 0.5 + 0.5;
 #endif
 

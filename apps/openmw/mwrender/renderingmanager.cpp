@@ -375,7 +375,7 @@ namespace MWRender
         globalDefines["preLightEnv"] = Settings::Manager::getBool("apply lighting to environment maps", "Shaders") ? "1" : "0";
         globalDefines["radialFog"] = Settings::Manager::getBool("radial fog", "Shaders") ? "1" : "0";
         globalDefines["useGPUShader4"] = "0";
-        globalDefines["disableGlobalNormals"] = "1";
+        globalDefines["disableNormals"] = "1";
 
         for (auto itr = lightDefines.begin(); itr != lightDefines.end(); itr++)
             globalDefines[itr->first] = itr->second;
@@ -466,6 +466,8 @@ namespace MWRender
 
         if (mPostProcessor->softParticlesEnabled())
             resourceSystem->getSceneManager()->setOpaqueDepthTex(mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 0), mPostProcessor->getTexture(PostProcessor::Tex_OpaqueDepth, 1));
+
+        mResourceSystem->getSceneManager()->setSupportsNormalsRT(mPostProcessor->getSupportsNormalsRT());
 
         if (reverseZ && !SceneUtil::isFloatingPointDepthFormat(mPostProcessor->omw_GetDepthFormat()))
             Log(Debug::Warning) << "Floating point depth format not in use but reverse-z buffer is enabled, consider disabling it.";

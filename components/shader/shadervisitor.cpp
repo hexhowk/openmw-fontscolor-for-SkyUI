@@ -11,6 +11,7 @@
 #include <osg/Multisample>
 #include <osg/Texture>
 #include <osg/ValueObject>
+#include <osg/Capability>
 
 #include <osgParticle/ParticleSystem>
 
@@ -208,6 +209,7 @@ namespace Shader
         , mAutoUseSpecularMaps(false)
         , mApplyLightingToEnvMaps(false)
         , mConvertAlphaTestToAlphaToCoverage(false)
+        , mSupportsNormalsRT(false)
         , mShaderManager(shaderManager)
         , mImageManager(imageManager)
         , mDefaultShaderPrefix(defaultShaderPrefix)
@@ -654,6 +656,14 @@ namespace Shader
             defineMap["endLight"] = "0";
         }
 
+        if (reqs.mAlphaBlend && mSupportsNormalsRT)
+        {
+            if (reqs.mSoftParticles)
+                defineMap["disableNormals"] = "1";
+            else
+                writableStateSet->setAttribute(new osg::Disablei(GL_BLEND, 1));
+        }
+
         if (writableStateSet->getMode(GL_ALPHA_TEST) != osg::StateAttribute::INHERIT && !previousAddedState->hasMode(GL_ALPHA_TEST))
             removedState->setMode(GL_ALPHA_TEST, writableStateSet->getMode(GL_ALPHA_TEST));
         // This disables the deprecated fixed-function alpha test
@@ -672,7 +682,7 @@ namespace Shader
             updateRemovedState(*writableUserData, removedState);
         }
 
-        if (reqs.mSoftParticles)
+        if (reqs.mSoftParticles && mOpaqueDepthTex.front())
         {
             osg::ref_ptr<osg::Depth> depth = new SceneUtil::AutoDepth;
             depth->setWriteMask(false);
@@ -693,7 +703,7 @@ namespace Shader
             addedState->setAttributeAndModes(opaqueDepthAttr);
         }
 
-        defineMap["softParticles"] = reqs.mSoftParticles ? "1" : "0";
+        defineMap["softParticles"] = reqs.mSoftParticles && mOpaqueDepthTex.front() ? "1" : "0";
 
         std::string shaderPrefix;
         if (!node.getUserValue("shaderPrefix", shaderPrefix))
@@ -885,7 +895,7 @@ namespace Shader
         {
             pushRequirements(drawable);
 
-            if (partsys && mOpaqueDepthTex[0])
+            if (partsys)
             {
                 mRequirements.back().mSoftParticles = true;
                 mRequirements.back().mSoftParticleSize = partsys->getDefaultParticleTemplate().getSizeRange().maximum;

@@ -8,6 +8,7 @@
 #include <osg/BlendFunc>
 #include <osg/Capability>
 
+#include <components/resource/scenemanager.hpp>
 #include <components/shader/shadermanager.hpp>
 #include <components/sceneutil/depth.hpp>
 
@@ -194,9 +195,10 @@ namespace
 
 namespace Terrain
 {
-    std::vector<osg::ref_ptr<osg::StateSet> > createPasses(bool useShaders, Shader::ShaderManager* shaderManager, const std::vector<TextureLayer> &layers,
+    std::vector<osg::ref_ptr<osg::StateSet> > createPasses(bool useShaders, Resource::SceneManager* sceneManager, const std::vector<TextureLayer> &layers,
                                                            const std::vector<osg::ref_ptr<osg::Texture2D> > &blendmaps, int blendmapScale, float layerTileSize)
     {
+        auto& shaderManager = sceneManager->getShaderManager();
         std::vector<osg::ref_ptr<osg::StateSet> > passes;
 
         unsigned int blendmapIndex = 0;
@@ -209,7 +211,8 @@ namespace Terrain
             if (!blendmaps.empty())
             {
                 stateset->setMode(GL_BLEND, osg::StateAttribute::ON);
-                stateset->setAttribute( new osg::Disablei(GL_BLEND, 1) );
+                if (sceneManager->getSupportsNormalsRT())
+                    stateset->setAttribute(new osg::Disablei(GL_BLEND, 1));
                 stateset->setRenderBinDetails(firstLayer ? 0 : 1, "RenderBin");
                 if (!firstLayer)
                 {
@@ -254,15 +257,15 @@ namespace Terrain
                 defineMap["parallax"] = (it->mNormalMap && it->mParallax) ? "1" : "0";
                 defineMap["writeNormals"] = (it == layers.end() - 1) ? "1" : "0";
 
-                osg::ref_ptr<osg::Shader> vertexShader = shaderManager->getShader("terrain_vertex.glsl", defineMap, osg::Shader::VERTEX);
-                osg::ref_ptr<osg::Shader> fragmentShader = shaderManager->getShader("terrain_fragment.glsl", defineMap, osg::Shader::FRAGMENT);
+                osg::ref_ptr<osg::Shader> vertexShader = shaderManager.getShader("terrain_vertex.glsl", defineMap, osg::Shader::VERTEX);
+                osg::ref_ptr<osg::Shader> fragmentShader = shaderManager.getShader("terrain_fragment.glsl", defineMap, osg::Shader::FRAGMENT);
                 if (!vertexShader || !fragmentShader)
                 {
                     // Try again without shader. Error already logged by above
-                    return createPasses(false, shaderManager, layers, blendmaps, blendmapScale, layerTileSize);
+                    return createPasses(false, sceneManager, layers, blendmaps, blendmapScale, layerTileSize);
                 }
 
-                stateset->setAttributeAndModes(shaderManager->getProgram(vertexShader, fragmentShader));
+                stateset->setAttributeAndModes(shaderManager.getProgram(vertexShader, fragmentShader));
                 stateset->addUniform(UniformCollection::value().mColorMode);
             }
             else

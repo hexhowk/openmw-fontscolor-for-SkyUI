@@ -109,6 +109,8 @@ namespace MWRender
 
         bool disableTechnique(std::shared_ptr<fx::Technique> technique, bool dirty = true);
 
+        bool getSupportsNormalsRT() const { return mNormalsSupported; }
+
         template <class T>
         void setUniform(std::shared_ptr<fx::Technique> technique, const std::string& name, const T& value)
         {

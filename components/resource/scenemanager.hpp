@@ -196,6 +196,9 @@ namespace Resource
 
         void reportStats(unsigned int frameNumber, osg::Stats* stats) const override;
 
+        void setSupportsNormalsRT(bool supports) { mSupportsNormalsRT = supports; }
+        bool getSupportsNormalsRT() const { return mSupportsNormalsRT; }
+
     private:
 
         Shader::ShaderVisitor* createShaderVisitor(const std::string& shaderPrefix = "objects");
@@ -212,6 +215,7 @@ namespace Resource
         SceneUtil::LightingMethod mLightingMethod;
         SceneUtil::LightManager::SupportedMethods mSupportedLightingMethods;
         bool mConvertAlphaTestToAlphaToCoverage;
+        bool mSupportsNormalsRT;
         GLenum mDepthFormat;
         std::array<osg::ref_ptr<osg::Texture2D>, 2> mOpaqueDepthTex;
 

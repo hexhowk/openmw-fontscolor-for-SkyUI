@@ -318,6 +318,7 @@ namespace Resource
         , mApplyLightingToEnvMaps(false)
         , mLightingMethod(SceneUtil::LightingMethod::FFP)
         , mConvertAlphaTestToAlphaToCoverage(false)
+        , mSupportsNormalsRT(false)
         , mDepthFormat(0)
         , mSharedStateManager(new SharedStateManager)
         , mImageManager(imageManager)
@@ -931,6 +932,7 @@ namespace Resource
         shaderVisitor->setApplyLightingToEnvMaps(mApplyLightingToEnvMaps);
         shaderVisitor->setConvertAlphaTestToAlphaToCoverage(mConvertAlphaTestToAlphaToCoverage);
         shaderVisitor->setOpaqueDepthTex(mOpaqueDepthTex[0], mOpaqueDepthTex[1]);
+        shaderVisitor->setSupportsNormalsRT(mSupportsNormalsRT);
         return shaderVisitor;
     }
 }
