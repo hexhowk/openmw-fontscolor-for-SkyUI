@@ -381,6 +381,7 @@ namespace MWRender
             {
                 osg::ref_ptr<osg::RenderBuffer> normalRB = new osg::RenderBuffer(width, height, textures[Tex_Normal]->getInternalFormat(), mSamples);
                 fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(normalRB));
+                fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(normalRB));
             }
             osg::ref_ptr<osg::RenderBuffer> depthRB = new osg::RenderBuffer(width, height, textures[Tex_Depth]->getInternalFormat(), mSamples);
             fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
@@ -392,7 +393,11 @@ namespace MWRender
             fbos[FBO_Intercept]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(textures[Tex_Normal]));
         }
         else
+        {
             fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
+            if (mNormals && mNormalsSupported)
+                fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(textures[Tex_Normal]));
+        }
 
         if (textures[Tex_OpaqueDepth])
         {
