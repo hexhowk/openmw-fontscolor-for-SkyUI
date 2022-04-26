@@ -111,7 +111,7 @@ TestFile repeated_shared_block{R"(
 
         void compile(const std::string& name)
         {
-            mTechnique = std::make_unique<Technique>(*mVFS.get(), mImageManager, name, 1, 1, true);
+            mTechnique = std::make_unique<Technique>(*mVFS.get(), mImageManager, name, 1, 1, true, true);
             mTechnique->compile();
         }
     };

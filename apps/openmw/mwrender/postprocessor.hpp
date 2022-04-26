@@ -207,7 +207,6 @@ namespace MWRender
         bool mNormals;
         bool mPrevNormals;
         bool mNormalsSupported;
-        bool mNormalsNeedReloading;
         bool mUBO;
         int mGLSLVersion;
 

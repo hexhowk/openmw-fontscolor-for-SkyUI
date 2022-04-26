@@ -78,8 +78,13 @@ namespace MWRender
         unsigned int contextID = gc->getState()->getContextID();
         osg::GLExtensions* ext = gc->getState()->get<osg::GLExtensions>();
 
-        if (osg::getGLExtensionFuncPtr("glDisablei"))
+        if (!ext->glDisablei && ext->glDisableIndexedEXT)
+            ext->glDisablei = ext->glDisableIndexedEXT;
+
+        if (ext->glDisablei)
             mNormalsSupported = true;
+        else
+            Log(Debug::Error) << "'glDisablei' unsupported, pass normals will not be available to shaders.";
 
         if (mSoftParticles)
             for (int i = 0; i < 2; ++i)
@@ -302,20 +307,25 @@ namespace MWRender
             createTexturesAndCamera(frameId, width(), height());
             createObjectsForFrame(frameId, width(), height());
             mDirty = false;
+        }
 
-            if (mNormalsSupported && mNormals != mPrevNormals)
-            {
-                mPrevNormals = mNormals;
+        if (mNormalsSupported && mNormals != mPrevNormals)
+        {
+            mPrevNormals = mNormals;
 
-                mViewer->stopThreading();
+            mViewer->stopThreading();
 
-                auto& shaderManager = MWBase::Environment::get().getResourceSystem()->getSceneManager()->getShaderManager();
-                auto defines = shaderManager.getGlobalDefines();
-                defines["disableNormals"] = mNormals ? "0" : "1";
-                shaderManager.setGlobalDefines(defines);
+            auto& shaderManager = MWBase::Environment::get().getResourceSystem()->getSceneManager()->getShaderManager();
+            auto defines = shaderManager.getGlobalDefines();
+            defines["disableNormals"] = mNormals ? "0" : "1";
+            shaderManager.setGlobalDefines(defines);
 
-                mViewer->startThreading();
-            }
+            mViewer->startThreading();
+
+            createTexturesAndCamera(frameId, width(), height());
+            createObjectsForFrame(frameId, width(), height());
+            mDirty = true;
+            mDirtyFrameId = !frameId;
         }
 
         mPingPongCanvas->setPostProcessing(frameId, mUsePostProcessing);
@@ -352,7 +362,8 @@ namespace MWRender
 
         fbos[FBO_Primary] = new osg::FrameBufferObject;
         fbos[FBO_Primary]->setAttachment(osg::Camera::COLOR_BUFFER0, osg::FrameBufferAttachment(textures[Tex_Scene]));
-        fbos[FBO_Primary]->setAttachment(osg::Camera::COLOR_BUFFER1, osg::FrameBufferAttachment(textures[Tex_Normal]));
+        if (mNormals && mNormalsSupported)
+            fbos[FBO_Primary]->setAttachment(osg::Camera::COLOR_BUFFER1, osg::FrameBufferAttachment(textures[Tex_Normal]));
         fbos[FBO_Primary]->setAttachment(osg::Camera::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(textures[Tex_Depth]));
 
         fbos[FBO_FirstPerson] = new osg::FrameBufferObject;
@@ -364,12 +375,15 @@ namespace MWRender
         // buffer for display or used as the entry point for a post process chain.
         if (mSamples > 1)
         {
-            fbos[FBO_Multisample] = new osg::FrameBufferObject;
+            fbos[FBO_Multisample] =new osg::FrameBufferObject;
             osg::ref_ptr<osg::RenderBuffer> colorRB = new osg::RenderBuffer(width, height, textures[Tex_Scene]->getInternalFormat(), mSamples);
-            osg::ref_ptr<osg::RenderBuffer> normalRB = new osg::RenderBuffer(width, height, textures[Tex_Normal]->getInternalFormat(), mSamples);
+            if (mNormals && mNormalsSupported)
+            {
+                osg::ref_ptr<osg::RenderBuffer> normalRB = new osg::RenderBuffer(width, height, textures[Tex_Normal]->getInternalFormat(), mSamples);
+                fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(normalRB));
+            }
             osg::ref_ptr<osg::RenderBuffer> depthRB = new osg::RenderBuffer(width, height, textures[Tex_Depth]->getInternalFormat(), mSamples);
             fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
-            fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER1, osg::FrameBufferAttachment(normalRB));
             fbos[FBO_Multisample]->setAttachment(osg::FrameBufferObject::BufferComponent::PACKED_DEPTH_STENCIL_BUFFER, osg::FrameBufferAttachment(depthRB));
             fbos[FBO_FirstPerson]->setAttachment(osg::FrameBufferObject::BufferComponent::COLOR_BUFFER0, osg::FrameBufferAttachment(colorRB));
 

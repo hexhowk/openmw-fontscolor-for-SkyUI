@@ -41,12 +41,12 @@ void main()
 {
     vec2 adjustedUV = (gl_TextureMatrix[0] * vec4(uv, 0.0, 1.0)).xy;
 
-    vec3 worldNormal;
+    vec3 worldNormal = normalize(passNormal);
 
 #if @normalMap
     vec4 normalTex = texture2D(normalMap, adjustedUV);
 
-    vec3 normalizedNormal = normalize(passNormal);
+    vec3 normalizedNormal = worldNormal;
     vec3 tangent = vec3(1.0, 0.0, 0.0);
     vec3 binormal = normalize(cross(tangent, normalizedNormal));
     tangent = normalize(cross(normalizedNormal, binormal)); // note, now we need to re-cross to derive tangent again because it wasn't orthonormal
@@ -58,7 +58,6 @@ void main()
 #endif
 
 #if (!@normalMap && (@parallax || @forcePPL))
-    worldNormal = normalize(passNormal);
     vec3 viewNormal = gl_NormalMatrix * worldNormal;
 #endif
 
@@ -111,7 +110,6 @@ void main()
     if (matSpec != vec3(0.0))
     {
 #if (!@normalMap && !@parallax && !@forcePPL)
-        worldNormal = normalize(passNormal);
         vec3 viewNormal = gl_NormalMatrix * worldNormal;
 #endif
         gl_FragData[0].xyz += getSpecular(normalize(viewNormal), normalize(passViewPos), shininess, matSpec) * shadowing;

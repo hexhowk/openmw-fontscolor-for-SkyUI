@@ -96,12 +96,12 @@ void main()
     vec2 adjustedDiffuseUV = diffuseMapUV;
 #endif
 
-    vec3 worldNormal;
+    vec3 worldNormal = normalize(passNormal);
 
 #if @normalMap
     vec4 normalTex = texture2D(normalMap, normalMapUV);
 
-    vec3 normalizedNormal = normalize(passNormal);
+    vec3 normalizedNormal = worldNormal;
     vec3 normalizedTangent = normalize(passTangent.xyz);
     vec3 binormal = cross(normalizedTangent, normalizedNormal) * passTangent.w;
     mat3 tbnTranspose = mat3(normalizedTangent, binormal, normalizedNormal);
@@ -111,7 +111,6 @@ void main()
 #endif
 
 #if (!@normalMap && (@parallax || @forcePPL))
-    worldNormal = normalize(passNormal);
     vec3 viewNormal = gl_NormalMatrix * worldNormal;
 #endif
 
@@ -226,7 +225,6 @@ void main()
     if (matSpec != vec3(0.0))
     {
 #if (!@normalMap && !@parallax && !@forcePPL)
-        worldNormal = normalize(passNormal);
         vec3 viewNormal = gl_NormalMatrix * worldNormal;
 #endif
         gl_FragData[0].xyz += getSpecular(normalize(viewNormal), normalize(passViewPos.xyz), shininess, matSpec) * shadowing;
