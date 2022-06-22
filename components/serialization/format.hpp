@@ -29,6 +29,9 @@ namespace Serialization
     template <class T>
     inline constexpr bool isContiguousContainer = IsContiguousContainer<std::decay_t<T>>::value;
 
+    template <class T>
+    concept ContiguousContainer = isContiguousContainer<T>;
+
     template <Mode mode, class Derived>
     struct Format
     {
@@ -47,9 +50,8 @@ namespace Serialization
             self()(std::forward<Visitor>(visitor), data, size);
         }
 
-        template <class Visitor, class T>
+        template <class Visitor, ContiguousContainer T>
         auto operator()(Visitor&& visitor, T&& value) const
-            -> std::enable_if_t<isContiguousContainer<T>>
         {
             if constexpr (mode == Mode::Write)
                 visitor(self(), static_cast<std::uint64_t>(value.size()));
