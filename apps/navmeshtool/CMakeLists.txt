@@ -20,3 +20,15 @@ endif()
 if (WIN32)
     install(TARGETS openmw-navmeshtool RUNTIME DESTINATION ".")
 endif()
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16 AND MSVC)
+    target_precompile_headers(openmw-navmeshtool PRIVATE
+        <components/files/configurationmanager.hpp>
+        <components/detournavigator/recastmesh.hpp>
+
+        <algorithm>
+        <memory>
+        <string>
+        <vector>
+    )
+endif()

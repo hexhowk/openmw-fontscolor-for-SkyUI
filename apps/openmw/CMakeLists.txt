@@ -157,9 +157,50 @@ target_link_libraries(openmw
     components
 )
 
-if (MSVC AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
-    target_precompile_headers(openmw PRIVATE ${SOL_INCLUDE_DIR}/sol/sol.hpp)
-endif ()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16 AND MSVC)
+    target_precompile_headers(openmw PRIVATE
+        mwworld/esmstore.hpp
+        mwworld/livecellref.hpp
+        mwworld/refdata.hpp
+        mwworld/class.hpp
+        mwworld/containerstore.hpp
+
+        mwgui/layout.hpp
+        mwgui/windowbase.hpp
+
+        mwmechanics/creaturestats.hpp
+
+        mwrender/postprocessor.hpp
+
+        <components/esm/defs.hpp>
+        <components/files/configurationmanager.hpp>
+        <components/lua/luastate.hpp>
+        <components/detournavigator/recastmesh.hpp>
+
+        <boost/filesystem.hpp>
+        <boost/program_options/options_description.hpp>
+
+        <sol/sol.hpp>
+
+        <osg/StateSet>
+        <osg/Node>
+        <osg/Drawable>
+        <osg/Camera>
+
+        <osgViewer/Viewer>
+
+        <MyGUI_Widget.h>
+
+        <algorithm>
+        <filesystem>
+        <fstream>
+        <functional>
+        <memory>
+        <string>
+        <string_view>
+        <vector>
+    )
+endif()
 
 if (ANDROID)
     target_link_libraries(openmw EGL android log z)

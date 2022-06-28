@@ -19,3 +19,10 @@ else()
     )
     target_link_libraries(oics local_tinyxml)
 endif()
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16 AND MSVC)
+    target_precompile_headers(oics PUBLIC
+        <algorithm>
+        <string>
+    )
+endif()

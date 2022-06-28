@@ -498,6 +498,40 @@ if(USE_QT)
     set_property(TARGET components_qt PROPERTY AUTOMOC ON)
 endif(USE_QT)
 
-if (MSVC AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
-    target_precompile_headers(components PRIVATE ${SOL_INCLUDE_DIR}/sol/sol.hpp)
-endif ()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16 AND MSVC)
+    target_precompile_headers(components PUBLIC
+        esm/defs.hpp
+        lua/luastate.hpp
+        detournavigator/recastmesh.hpp
+
+        <sol/sol.hpp>
+
+        <osg/State>
+        <osg/StateSet>
+        <osg/Node>
+        <osg/Drawable>
+        <osg/Camera>
+
+        <MyGUI_Widget.h>
+
+        <boost/filesystem.hpp>
+
+        <algorithm>
+        <filesystem>
+        <fstream>
+        <functional>
+        <memory>
+        <ostream>
+        <string>
+        <vector>
+    )
+
+    target_precompile_headers(components PRIVATE
+        esm4/reader.hpp
+        files/configurationmanager.hpp
+
+        <osgViewer/Viewer>
+
+        <boost/program_options/options_description.hpp>
+    )
+endif()

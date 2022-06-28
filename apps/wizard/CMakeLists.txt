@@ -110,3 +110,9 @@ endif(WIN32)
 if(USE_QT)
     set_property(TARGET openmw-wizard PROPERTY AUTOMOC ON)
 endif(USE_QT)
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16 AND MSVC)
+    target_precompile_headers(openmw-wizard PRIVATE
+        <components/files/configurationmanager.hpp>
+    )
+endif()
